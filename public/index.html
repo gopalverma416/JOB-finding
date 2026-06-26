@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>DevHunt — SWE Job Hunting Companion & AI Application Tracker</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          ink: '#0b0f17',
+          panel: '#0f1623',
+          panel2: '#131c2b',
+          line: '#1f2a3c',
+          muted: '#8aa0bd',
+          accent: '#5b8cff',
+          accent2: '#9d7bff',
+          good: '#34d399',
+          warn: '#fbbf24',
+          bad: '#f87171'
+        },
+        fontFamily: {
+          mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace']
+        }
+      }
+    }
+  };
+</script>
+<style>
+  html, body { background:#0b0f17; height:100%; overflow:hidden; }
+  * { -webkit-tap-highlight-color: transparent; }
+  ::-webkit-scrollbar { width:10px; height:10px; }
+  ::-webkit-scrollbar-track { background:#0b0f17; }
+  ::-webkit-scrollbar-thumb { background:#243349; border-radius:8px; }
+  ::-webkit-scrollbar-thumb:hover { background:#33486a; }
+  .card-dragging { opacity:.4; transform:scale(.98); }
+  .col-dragover { outline:2px dashed #5b8cff; outline-offset:-6px; background:rgba(91,140,255,.06); }
+  .fade-in { animation:fade .18s ease-out; }
+  @keyframes fade { from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+  .toast-in { animation:tin .22s cubic-bezier(.2,.8,.2,1); }
+  @keyframes tin { from{opacity:0; transform:translateX(24px);} to{opacity:1; transform:translateX(0);} }
+  textarea { resize:vertical; }
+  .nav-active { background:linear-gradient(90deg, rgba(91,140,255,.18), rgba(157,123,255,.10)); border-color:#2b3e5e !important; color:#dbe7ff !important; }
+  .grip { cursor:grab; } .grip:active { cursor:grabbing; }
+  [contenteditable]:focus { outline:none; }
+</style>
+</head>
+<body class="text-slate-200 font-sans antialiased selection:bg-accent/30">
+
+<div class="w-screen h-screen max-h-screen overflow-hidden fixed flex bg-ink">
+
+  <!-- ============ LEFT SIDEBAR ============ -->
+  <aside class="w-16 md:w-60 shrink-0 h-full bg-panel border-r border-line flex flex-col">
+    <div class="h-16 flex items-center gap-3 px-4 border-b border-line">
+      <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-accent to-accent2 grid place-items-center shrink-0 shadow-lg shadow-accent/20">
+        <span class="font-mono font-black text-white text-lg">&lt;/&gt;</span>
+      </div>
+      <div class="hidden md:block leading-tight">
+        <div class="font-bold tracking-tight text-white">DevHunt</div>
+        <div class="text-[10px] text-muted font-mono">job-hunt.companion</div>
+      </div>
+    </div>
+
+    <nav id="nav" class="flex-1 p-2 space-y-1 overflow-y-auto"></nav>
+
+    <div class="p-2 border-t border-line space-y-1">
+      <button id="exportBtn" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted hover:text-white hover:bg-panel2 transition">
+        <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
+        <span class="hidden md:inline">Export JSON</span>
+      </button>
+      <button id="importBtn" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted hover:text-white hover:bg-panel2 transition">
+        <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21V9m0 0l-4 4m4-4l4 4M4 7V5a2 2 0 012-2h12a2 2 0 012 2v2"/></svg>
+        <span class="hidden md:inline">Import JSON</span>
+      </button>
+      <button id="resetBtn" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-bad/80 hover:text-bad hover:bg-bad/10 transition">
+        <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m2 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
+        <span class="hidden md:inline">Reset Data</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="flex-1 h-full flex flex-col min-w-0">
+    <header class="h-16 shrink-0 border-b border-line bg-panel/70 backdrop-blur flex items-center justify-between px-4 md:px-6 gap-4">
+      <div class="min-w-0">
+        <h1 id="viewTitle" class="text-lg md:text-xl font-bold text-white truncate">Application Board</h1>
+        <p id="viewSub" class="text-[11px] md:text-xs text-muted truncate">Drag cards or use quick-move to update your pipeline.</p>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-panel2 border border-line text-xs font-mono text-muted">
+          <span id="statTotal" class="text-white font-semibold">0</span> apps
+          <span class="w-px h-3 bg-line"></span>
+          <span id="statContacts" class="text-white font-semibold">0</span> HR
+        </div>
+        <button id="addJobBtn" class="flex items-center gap-2 px-3 md:px-4 py-2 rounded-lg bg-gradient-to-r from-accent to-accent2 text-white text-sm font-semibold shadow-lg shadow-accent/20 hover:brightness-110 active:scale-95 transition">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
+          <span class="hidden sm:inline">Add Application</span>
+        </button>
+      </div>
+    </header>
+
+    <section id="views" class="flex-1 min-h-0 overflow-hidden"></section>
+  </main>
+</div>
+
+<!-- ============ MODAL ROOT ============ -->
+<div id="modalRoot" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm"></div>
+
+<!-- ============ TOAST ROOT ============ -->
+<div id="toastRoot" class="fixed top-4 right-4 z-[60] space-y-2 w-[min(92vw,340px)]"></div>
+
+<!-- hidden file input for import -->
+<input id="fileInput" type="file" accept="application/json,.json" class="hidden" />
+
+<script>
+"use strict";
+/* =========================================================================
+   DevHunt — SWE Job Hunting Companion & AI Application Tracker
+   Single-file, dependency-free (Tailwind CDN only). All state in localStorage.
+   ========================================================================= */
+
+/* ----------------------------- Constants ------------------------------- */
+const STORAGE_KEY = "devhunt.state.v1";
+const SCHEMA_VERSION = 1;
+
+const COLUMNS = [
+  { id: "wishlist",     label: "Wishlist",     accent: "#8aa0bd" },
+  { id: "applied",      label: "Applied",      accent: "#5b8cff" },
+  { id: "interviewing", label: "Interviewing", accent: "#fbbf24" },
+  { id: "offer",        label: "Offer",        accent: "#34d399" },
+  { id: "rejected",     label: "Rejected",     accent: "#f87171" }
+];
+const COLUMN_IDS = COLUMNS.map(c => c.id);
+const COLUMN_LABEL = Object.fromEntries(COLUMNS.map(c => [c.id, c.label]));
+
+const SUBSTAGES = [
+  { key: "oa",           label: "OA" },
+  { key: "phoneScreen",  label: "Phone Screen" },
+  { key: "technical",    label: "Technical" },
+  { key: "systemDesign", label: "System Design" },
+  { key: "behavioral",   label: "Behavioral" }
+];
+
+const CS_TOPICS = [
+  { key: "scalability",   label: "Scalability & Horizontal Scaling" },
+  { key: "caching",       label: "Caching (CDN, Redis, LRU)" },
+  { key: "loadBalancers", label: "Load Balancers" },
+  { key: "sharding",      label: "Database Sharding & Replication" },
+  { key: "messaging",     label: "Message Queues & Streaming" },
+  { key: "os",            label: "Operating Systems & Concurrency" },
+  { key: "networking",    label: "Networking (TCP/IP, DNS, HTTP)" },
+  { key: "consistency",   label: "CAP Theorem & Consistency" }
+];
+
+const ROLE_OPTIONS = ["Frontend", "Backend", "Fullstack", "Mobile", "DevOps / SRE", "ML / Data", "Embedded", "Security"];
+const DIFFICULTIES = ["Easy", "Medium", "Hard"];
+const DSA_TOPICS = ["Arrays", "Strings", "Hashing", "Two Pointers", "Sliding Window", "Stack", "Queue",
+  "Linked List", "Trees", "Graphs", "Heap", "Greedy", "Backtracking", "Dynamic Programming", "Binary Search", "Math", "Tries"];
+
+/* ----------------------------- Utilities ------------------------------- */
+function uid(prefix) {
+  return (prefix || "id") + "_" + Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
+}
+function nowISO() { return new Date().toISOString(); }
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+
+function escapeHtml(value) {
+  const s = value == null ? "" : String(value);
+  return s.replace(/[&<>"']/g, ch => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[ch]));
+}
+function escapeAttr(value) { return escapeHtml(value); }
+
+function clampNum(n, lo, hi) { n = Number(n); if (!isFinite(n)) n = lo; return Math.max(lo, Math.min(hi, n)); }
+
+function daysAgo(n) {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - n);
+  return d;
+}
+function fmtDate(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+function relTime(iso) {
+  if (!iso) return "";
+  const then = new Date(iso).getTime();
+  if (isNaN(then)) return "";
+  const diff = Date.now() - then;
+  const day = 86400000;
+  if (diff < 60000) return "just now";
+  if (diff < 3600000) return Math.floor(diff / 60000) + "m ago";
+  if (diff < day) return Math.floor(diff / 3600000) + "h ago";
+  if (diff < 7 * day) return Math.floor(diff / day) + "d ago";
+  return fmtDate(iso);
+}
+function parseStack(raw) {
+  if (Array.isArray(raw)) return raw.map(s => String(s).trim()).filter(Boolean);
+  return String(raw || "")
+    .split(/[,;\n|/]+/)
+    .map(s => s.trim())
+    .filter(Boolean);
+}
+function fmtMoney(n) {
+  const v = Number(n);
+  if (!isFinite(v) || v <= 0) return "—";
+  return "$" + v.toLocaleString();
+}
+function isValidEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e || "").trim()); }
+
+/* Demo/seed data now lives server-side (src/seedData.js); the "Reset Data"
+   button calls POST /api/reset. The frontend no longer holds a seed copy. */
+
+/* --------------------------- State Management -------------------------- */
+/* STATE is an in-memory mirror of the MongoDB-backed REST API. The render
+   layer reads from STATE synchronously; every mutation hits the server first
+   (via the `repo` helpers), then patches STATE and re-renders. localStorage is
+   used ONLY as an offline read-cache so the UI still shows last-known data if
+   the API is unreachable. Each record's identity is its Mongo `id` field. */
+let STATE = null;
+let OFFLINE = false;
+let profileSaveTimer = null;
+let pendingProfilePatch = {};
+const API = "/api";
+const CACHE_KEY = STORAGE_KEY; // reuse "devhunt.state.v1" as the offline cache key
+
+/* Thin fetch wrapper: JSON in/out, throws Error(message) on non-2xx. */
+async function apiCall(method, path, body) {
+  const opts = { method, headers: {} };
+  if (body !== undefined) {
+    opts.headers["Content-Type"] = "application/json";
+    opts.body = JSON.stringify(body);
+  }
+  const res = await fetch(API + path, opts);
+  const text = await res.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch (_) { data = null; }
+  if (!res.ok) throw new Error((data && data.error) ? data.error : ("Request failed (" + res.status + ")"));
+  return data;
+}
+
+function assembleState(jobs, contacts, leetcode, profile) {
+  profile = profile || {};
+  const out = {
+    activeView: profile.activeView || "board",
+    jobs: Array.isArray(jobs) ? jobs : [],
+    contacts: Array.isArray(contacts) ? contacts : [],
+    leetcode: Array.isArray(leetcode) ? leetcode : [],
+    csChecklist: (profile.csChecklist && typeof profile.csChecklist === "object") ? profile.csChecklist : {},
+    goals: (profile.goals && typeof profile.goals === "object") ? profile.goals : { Easy: 50, Medium: 75, Hard: 30 },
+    resumeStack: typeof profile.resumeStack === "string" ? profile.resumeStack : "",
+    aiCache: (profile.aiCache && typeof profile.aiCache === "object") ? profile.aiCache : { jd: "", resume: "" }
+  };
+  // normalize so render code can rely on shapes
+  out.jobs.forEach(normalizeJobShape);
+  CS_TOPICS.forEach(t => { if (typeof out.csChecklist[t.key] !== "boolean") out.csChecklist[t.key] = false; });
+  DIFFICULTIES.forEach(d => { if (typeof out.goals[d] !== "number") out.goals[d] = (d === "Easy" ? 50 : d === "Medium" ? 75 : 30); });
+  return out;
+}
+
+function normalizeJobShape(j) {
+  j.stack = parseStack(j.stack);
+  j.subStages = Object.assign({ oa: false, phoneScreen: false, technical: false, systemDesign: false, behavioral: false }, j.subStages || {});
+  if (!Array.isArray(j.history)) j.history = [];
+  if (j.salary == null) j.salary = "";
+  return j;
+}
+
+function cacheState() { try { localStorage.setItem(CACHE_KEY, JSON.stringify(STATE)); } catch (_) {} }
+function readCache() { try { return JSON.parse(localStorage.getItem(CACHE_KEY)); } catch (_) { return null; } }
+
+/* Load everything from the API in parallel; fall back to offline cache. */
+async function loadState() {
+  try {
+    const [jobs, contacts, leetcode, profile] = await Promise.all([
+      apiCall("GET", "/jobs"),
+      apiCall("GET", "/contacts"),
+      apiCall("GET", "/leetcode"),
+      apiCall("GET", "/profile")
+    ]);
+    OFFLINE = false;
+    STATE = assembleState(jobs, contacts, leetcode, profile);
+    cacheState();
+    return STATE;
+  } catch (e) {
+    console.warn("API unreachable, using offline cache:", e.message);
+    OFFLINE = true;
+    const cached = readCache();
+    STATE = cached || assembleState([], [], [], {});
+    return STATE;
+  }
+}
+
+/* Repository: each method calls the API, then patches STATE in place. */
+const repo = {
+  async createJob(payload) {
+    const job = normalizeJobShape(await apiCall("POST", "/jobs", payload));
+    STATE.jobs.unshift(job);
+    return job;
+  },
+  async updateJob(id, payload) {
+    const job = normalizeJobShape(await apiCall("PUT", "/jobs/" + id, payload));
+    const i = STATE.jobs.findIndex(j => j.id === id);
+    if (i >= 0) STATE.jobs[i] = job; else STATE.jobs.unshift(job);
+    return job;
+  },
+  async moveJob(id, status) {
+    const job = normalizeJobShape(await apiCall("PATCH", "/jobs/" + id + "/move", { status }));
+    const i = STATE.jobs.findIndex(j => j.id === id);
+    if (i >= 0) STATE.jobs[i] = job;
+    return job;
+  },
+  async deleteJob(id) {
+    await apiCall("DELETE", "/jobs/" + id);
+    STATE.jobs = STATE.jobs.filter(j => j.id !== id);
+    STATE.contacts.forEach(c => { if (c.jobId === id) c.jobId = null; });
+  },
+  async createContact(payload) {
+    const c = await apiCall("POST", "/contacts", payload);
+    STATE.contacts.unshift(c);
+    return c;
+  },
+  async importContacts(list) {
+    const result = await apiCall("POST", "/contacts/import", { contacts: list });
+    (result.contacts || []).slice().reverse().forEach(c => STATE.contacts.unshift(c));
+    return result; // { added, skipped, contacts }
+  },
+  async updateContact(id, payload) {
+    const c = await apiCall("PUT", "/contacts/" + id, payload);
+    const i = STATE.contacts.findIndex(x => x.id === id);
+    if (i >= 0) STATE.contacts[i] = c;
+    return c;
+  },
+  async deleteContact(id) {
+    await apiCall("DELETE", "/contacts/" + id);
+    STATE.contacts = STATE.contacts.filter(c => c.id !== id);
+  },
+  async createLeetcode(payload) {
+    const p = await apiCall("POST", "/leetcode", payload);
+    STATE.leetcode.push(p);
+    return p;
+  },
+  async deleteLeetcode(id) {
+    await apiCall("DELETE", "/leetcode/" + id);
+    STATE.leetcode = STATE.leetcode.filter(p => p.id !== id);
+  },
+  async saveProfileNow(patch) {
+    const profile = await apiCall("PUT", "/profile", patch);
+    return profile;
+  }
+};
+
+/* Debounced profile autosave (for AI scratchpad, goals, checklist, activeView). */
+function scheduleSave(patch) {
+  if (patch) Object.assign(pendingProfilePatch, patch);
+  if (profileSaveTimer) clearTimeout(profileSaveTimer);
+  profileSaveTimer = setTimeout(flushProfile, 400);
+}
+async function flushProfile() {
+  const patch = pendingProfilePatch;
+  if (!Object.keys(patch).length) return;
+  pendingProfilePatch = {};
+  try {
+    await repo.saveProfileNow(patch);
+    cacheState();
+  } catch (e) {
+    // re-merge the failed patch so it isn't lost; newer keystrokes win
+    pendingProfilePatch = Object.assign(patch, pendingProfilePatch);
+    if (!OFFLINE) toast("Could not save settings: " + e.message, "bad");
+  }
+}
+
+/* commit = re-render + refresh the offline cache (server write already done). */
+function commit(render) {
+  cacheState();
+  if (render !== false) renderActiveView();
+  renderChrome();
+}
+
+/* Run an async mutation with a standard error toast. */
+async function mutate(fn, errPrefix) {
+  try { await fn(); commit(); }
+  catch (e) { toast((errPrefix || "Action failed") + ": " + e.message, "bad"); }
+}
+
+/* ------------------------------ Toasts --------------------------------- */
+function toast(msg, kind) {
+  const root = document.getElementById("toastRoot");
+  const colors = {
+    good: "border-good/40 bg-good/10 text-good",
+    bad: "border-bad/40 bg-bad/10 text-bad",
+    info: "border-accent/40 bg-accent/10 text-accent",
+    warn: "border-warn/40 bg-warn/10 text-warn"
+  };
+  const icons = {
+    good: "M5 13l4 4L19 7",
+    bad: "M6 18L18 6M6 6l12 12",
+    info: "M12 8h.01M11 12h1v4h1",
+    warn: "M12 9v4m0 4h.01"
+  };
+  const el = document.createElement("div");
+  el.className = "toast-in flex items-start gap-3 px-4 py-3 rounded-xl border backdrop-blur bg-panel2/90 shadow-xl " + (colors[kind] || colors.info);
+  el.innerHTML =
+    '<svg class="w-5 h-5 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="' + (icons[kind] || icons.info) + '"/></svg>' +
+    '<div class="text-sm leading-snug text-slate-100">' + escapeHtml(msg) + '</div>';
+  root.appendChild(el);
+  setTimeout(() => {
+    el.style.transition = "opacity .25s, transform .25s";
+    el.style.opacity = "0";
+    el.style.transform = "translateX(24px)";
+    setTimeout(() => el.remove(), 260);
+  }, 2800);
+}
+
+/* ------------------------------ Modal ---------------------------------- */
+function openModal(html, opts) {
+  opts = opts || {};
+  const root = document.getElementById("modalRoot");
+  root.innerHTML =
+    '<div class="fade-in w-full ' + (opts.size || "max-w-lg") + ' bg-panel rounded-2xl border border-line shadow-2xl max-h-[92vh] flex flex-col overflow-hidden">' + html + '</div>';
+  root.classList.remove("hidden");
+  root.classList.add("flex");
+  const onBackdrop = (e) => { if (e.target === root) closeModal(); };
+  root.onclick = onBackdrop;
+  document.addEventListener("keydown", escClose);
+}
+function escClose(e) { if (e.key === "Escape") closeModal(); }
+function closeModal() {
+  const root = document.getElementById("modalRoot");
+  root.classList.add("hidden");
+  root.classList.remove("flex");
+  root.innerHTML = "";
+  root.onclick = null;
+  document.removeEventListener("keydown", escClose);
+}
+
+/* ======================================================================
+   NAVIGATION
+   ====================================================================== */
+const VIEWS = [
+  { id: "board",     title: "Application Board",        sub: "Drag cards or use quick-move to update your pipeline.",
+    icon: 'M4 5h16M4 5v14M4 5l4 0M20 5v14M9 5v14m6-14v14M4 19h16' },
+  { id: "ai",        title: "AI Prep & JD Matcher",     sub: "Paste a job description + your stack to generate tailored prep.",
+    icon: 'M9.5 3l1.5 4 4 1.5-4 1.5L9.5 14 8 10 4 8.5 8 7zM17 13l.9 2.4 2.4.9-2.4.9L17 20l-.9-2.4-2.4-.9 2.4-.9z' },
+  { id: "prep",      title: "LeetCode & System Design", sub: "Track problems solved and tick off CS fundamentals.",
+    icon: 'M4 6h16M4 12h16M4 18h10M18 16l2 2 2-2' },
+  { id: "crm",       title: "Recruiter CRM (HR)",        sub: "Store HR contacts from your Claude + Apify flow and email them.",
+    icon: 'M16 11a4 4 0 10-8 0 4 4 0 008 0zM3 21a7 7 0 0114 0M17 8h4m-2-2v4' },
+  { id: "analytics", title: "Analytics Dashboard",       sub: "Live conversion telemetry, stack breakdown & 30-day velocity.",
+    icon: 'M4 19V5m0 14h16M8 17v-5m4 5V9m4 8v-7' }
+];
+
+function renderNav() {
+  const nav = document.getElementById("nav");
+  nav.innerHTML = VIEWS.map(v => {
+    const active = STATE.activeView === v.id;
+    return (
+      '<button data-view="' + v.id + '" class="navbtn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm border border-transparent transition ' +
+      (active ? "nav-active font-semibold" : "text-muted hover:text-white hover:bg-panel2") + '">' +
+        '<svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="' + v.icon + '"/></svg>' +
+        '<span class="hidden md:inline text-left leading-tight">' + escapeHtml(v.title) + '</span>' +
+      '</button>'
+    );
+  }).join("");
+  nav.querySelectorAll(".navbtn").forEach(b => {
+    b.onclick = () => setView(b.getAttribute("data-view"));
+  });
+}
+
+function setView(id) {
+  STATE.activeView = id;
+  scheduleSave({ activeView: id });
+  renderNav();
+  renderActiveView();
+  const meta = VIEWS.find(v => v.id === id);
+  if (meta) {
+    document.getElementById("viewTitle").textContent = meta.title;
+    document.getElementById("viewSub").textContent = meta.sub;
+  }
+}
+
+/* renderChrome: header stats + nav highlight */
+function renderChrome() {
+  document.getElementById("statTotal").textContent = STATE.jobs.length;
+  document.getElementById("statContacts").textContent = STATE.contacts.length;
+}
+
+function renderActiveView() {
+  const host = document.getElementById("views");
+  const v = STATE.activeView;
+  if (v === "board") renderBoard(host);
+  else if (v === "ai") renderAI(host);
+  else if (v === "prep") renderPrep(host);
+  else if (v === "crm") renderCRM(host);
+  else if (v === "analytics") renderAnalytics(host);
+  else renderBoard(host);
+}
+
+/* ======================================================================
+   VIEW 1 — KANBAN BOARD
+   ====================================================================== */
+function jobsByStatus(status) {
+  return STATE.jobs.filter(j => j.status === status);
+}
+
+async function moveJob(jobId, toStatus) {
+  const job = STATE.jobs.find(j => j.id === jobId);
+  if (!job || job.status === toStatus || !COLUMN_IDS.includes(toStatus)) return;
+  const label = job.company || "Card";
+  try {
+    await repo.moveJob(jobId, toStatus);
+    commit();
+    toast(escapeHtml(label) + " → " + COLUMN_LABEL[toStatus], "info");
+  } catch (e) {
+    toast("Could not move card: " + e.message, "bad");
+  }
+}
+
+function renderBoard(host) {
+  host.innerHTML =
+    '<div class="h-full overflow-x-auto overflow-y-hidden">' +
+      '<div class="h-full flex gap-4 p-4 md:p-6 min-w-max">' +
+        COLUMNS.map(col => {
+          const items = jobsByStatus(col.id);
+          return (
+            '<div class="kcol w-[300px] md:w-[320px] shrink-0 h-full flex flex-col bg-panel rounded-2xl border border-line" data-col="' + col.id + '">' +
+              '<div class="flex items-center justify-between px-4 py-3 border-b border-line">' +
+                '<div class="flex items-center gap-2">' +
+                  '<span class="w-2.5 h-2.5 rounded-full" style="background:' + col.accent + '"></span>' +
+                  '<span class="font-semibold text-white text-sm">' + escapeHtml(col.label) + '</span>' +
+                '</div>' +
+                '<span class="text-xs font-mono px-2 py-0.5 rounded-full bg-panel2 text-muted">' + items.length + '</span>' +
+              '</div>' +
+              '<div class="kdrop flex-1 overflow-y-auto p-3 space-y-3" data-col="' + col.id + '">' +
+                (items.length ? items.map(j => jobCardHTML(j)).join("") :
+                  '<div class="text-center text-muted/60 text-xs py-10 border border-dashed border-line rounded-xl">Drop cards here</div>') +
+              '</div>' +
+            '</div>'
+          );
+        }).join("") +
+      '</div>' +
+    '</div>';
+
+  wireBoard(host);
+}
+
+function jobCardHTML(j) {
+  const colIdx = COLUMN_IDS.indexOf(j.status);
+  const prev = colIdx > 0 ? COLUMN_IDS[colIdx - 1] : null;
+  const next = colIdx < COLUMN_IDS.length - 1 ? COLUMN_IDS[colIdx + 1] : null;
+  const stageBadges = SUBSTAGES.filter(s => j.subStages[s.key])
+    .map(s => '<span class="text-[10px] px-1.5 py-0.5 rounded bg-accent/15 text-accent font-mono">' + escapeHtml(s.label) + '</span>').join("");
+  const stackChips = j.stack.slice(0, 4).map(s =>
+    '<span class="text-[10px] px-1.5 py-0.5 rounded bg-panel2 border border-line text-slate-300 max-w-[140px] truncate inline-block align-bottom" title="' + escapeAttr(s) + '">' + escapeHtml(s) + '</span>').join("");
+  const moreStack = j.stack.length > 4 ? '<span class="text-[10px] text-muted">+' + (j.stack.length - 4) + '</span>' : "";
+  const refColor = j.referral === "Have Referral" ? "text-good" : j.referral === "None" ? "text-muted" : "text-accent";
+
+  return (
+    '<div class="jobcard group fade-in bg-panel2 rounded-xl border border-line p-3 hover:border-accent/40 transition" draggable="true" data-id="' + j.id + '">' +
+      '<div class="flex items-start justify-between gap-2">' +
+        '<div class="min-w-0 grip" data-grip>' +
+          '<div class="font-semibold text-white text-sm truncate">' + escapeHtml(j.company || "Untitled") + '</div>' +
+          '<div class="text-[11px] text-muted truncate">' + escapeHtml(j.role) + ' · ' + fmtMoney(j.salary) + '</div>' +
+        '</div>' +
+        '<button data-act="edit" data-id="' + j.id + '" class="opacity-0 group-hover:opacity-100 transition text-muted hover:text-white shrink-0" title="Edit">' +
+          '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4v16h16v-7M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+        '</button>' +
+      '</div>' +
+      (stackChips ? '<div class="flex flex-wrap gap-1 mt-2">' + stackChips + moreStack + '</div>' : "") +
+      (stageBadges ? '<div class="flex flex-wrap gap-1 mt-2">' + stageBadges + '</div>' : "") +
+      '<div class="flex items-center justify-between mt-3 pt-2 border-t border-line/70">' +
+        '<span class="text-[10px] font-mono ' + refColor + '">' + escapeHtml(j.referral) + '</span>' +
+        '<span class="text-[10px] text-muted">' + relTime(j.dateAdded) + '</span>' +
+      '</div>' +
+      '<div class="flex items-center justify-between mt-2 gap-1">' +
+        '<button data-act="move-prev" data-id="' + j.id + '" ' + (prev ? "" : "disabled") + ' class="flex-1 text-[11px] py-1 rounded-md ' + (prev ? "bg-panel border border-line text-muted hover:text-white" : "opacity-30 cursor-not-allowed bg-panel") + '">◀ ' + (prev ? escapeHtml(COLUMN_LABEL[prev]) : "—") + '</button>' +
+        '<button data-act="move-next" data-id="' + j.id + '" ' + (next ? "" : "disabled") + ' class="flex-1 text-[11px] py-1 rounded-md ' + (next ? "bg-accent/15 border border-accent/30 text-accent hover:bg-accent/25" : "opacity-30 cursor-not-allowed bg-panel") + '">' + (next ? escapeHtml(COLUMN_LABEL[next]) : "—") + ' ▶</button>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+let dragId = null;
+function wireBoard(host) {
+  // quick-move + edit buttons
+  host.querySelectorAll("[data-act]").forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const id = btn.getAttribute("data-id");
+      const act = btn.getAttribute("data-act");
+      const job = STATE.jobs.find(j => j.id === id);
+      if (!job) return;
+      const idx = COLUMN_IDS.indexOf(job.status);
+      if (act === "move-prev" && idx > 0) moveJob(id, COLUMN_IDS[idx - 1]);
+      else if (act === "move-next" && idx < COLUMN_IDS.length - 1) moveJob(id, COLUMN_IDS[idx + 1]);
+      else if (act === "edit") openJobModal(job);
+    };
+  });
+  // open detail on card body click
+  host.querySelectorAll(".jobcard").forEach(card => {
+    card.addEventListener("click", (e) => {
+      if (e.target.closest("[data-act]")) return;
+      const job = STATE.jobs.find(j => j.id === card.getAttribute("data-id"));
+      if (job) openJobModal(job);
+    });
+    // drag events
+    card.addEventListener("dragstart", (e) => {
+      dragId = card.getAttribute("data-id");
+      card.classList.add("card-dragging");
+      try { e.dataTransfer.setData("text/plain", dragId); e.dataTransfer.effectAllowed = "move"; } catch (_) {}
+    });
+    card.addEventListener("dragend", () => {
+      card.classList.remove("card-dragging");
+      dragId = null;
+      host.querySelectorAll(".kdrop").forEach(d => d.classList.remove("col-dragover"));
+    });
+  });
+  // drop zones
+  host.querySelectorAll(".kdrop").forEach(zone => {
+    zone.addEventListener("dragover", (e) => { e.preventDefault(); try { e.dataTransfer.dropEffect = "move"; } catch (_) {} zone.classList.add("col-dragover"); });
+    zone.addEventListener("dragleave", (e) => { if (!zone.contains(e.relatedTarget)) zone.classList.remove("col-dragover"); });
+    zone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      zone.classList.remove("col-dragover");
+      let id = dragId;
+      try { id = e.dataTransfer.getData("text/plain") || dragId; } catch (_) {}
+      const to = zone.getAttribute("data-col");
+      if (id && to) moveJob(id, to);
+    });
+  });
+}
+
+/* -------- Add / Edit Job Modal -------- */
+function openJobModal(job) {
+  const isEdit = !!job;
+  const j = job || {};
+  const stackStr = Array.isArray(j.stack) ? j.stack.join(", ") : (j.stack || "");
+  const roleOpts = ROLE_OPTIONS.map(r => '<option value="' + escapeAttr(r) + '"' + (j.role === r ? " selected" : "") + '>' + escapeHtml(r) + '</option>').join("");
+  const statusOpts = COLUMNS.map(c => '<option value="' + c.id + '"' + ((j.status || "wishlist") === c.id ? " selected" : "") + '>' + escapeHtml(c.label) + '</option>').join("");
+  const refOpts = ["None", "Applied via Site", "Have Referral", "Recruiter Reached Out"]
+    .map(r => '<option value="' + escapeAttr(r) + '"' + ((j.referral || "None") === r ? " selected" : "") + '>' + escapeHtml(r) + '</option>').join("");
+  const subStageChecks = SUBSTAGES.map(s =>
+    '<label class="flex items-center gap-2 text-xs bg-panel2 border border-line rounded-lg px-3 py-2 cursor-pointer hover:border-accent/40">' +
+      '<input type="checkbox" data-sub="' + s.key + '" ' + (j.subStages && j.subStages[s.key] ? "checked" : "") + ' class="accent-accent w-4 h-4">' +
+      '<span>' + escapeHtml(s.label) + '</span>' +
+    '</label>').join("");
+
+  const field = (label, inner) =>
+    '<label class="block"><span class="text-[11px] uppercase tracking-wide text-muted font-semibold">' + label + '</span>' + inner + '</label>';
+  const inputCls = "mt-1 w-full bg-ink border border-line rounded-lg px-3 py-2 text-sm text-white focus:border-accent focus:ring-1 focus:ring-accent outline-none";
+
+  openModal(
+    '<div class="flex items-center justify-between px-5 py-4 border-b border-line">' +
+      '<h3 class="font-bold text-white">' + (isEdit ? "Edit Application" : "Add New Application") + '</h3>' +
+      '<button id="mClose" class="text-muted hover:text-white"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg></button>' +
+    '</div>' +
+    '<form id="jobForm" class="p-5 space-y-4 overflow-y-auto">' +
+      '<div class="grid grid-cols-2 gap-3">' +
+        field("Company *", '<input name="company" required value="' + escapeAttr(j.company || "") + '" class="' + inputCls + '" placeholder="Acme Corp">') +
+        field("Role", '<select name="role" class="' + inputCls + '">' + roleOpts + '</select>') +
+      '</div>' +
+      field("Target Tech Stack (comma separated)", '<input name="stack" value="' + escapeAttr(stackStr) + '" class="' + inputCls + '" placeholder="React, Go, AWS">') +
+      '<div class="grid grid-cols-2 gap-3">' +
+        field("Base Salary (USD)", '<input name="salary" type="number" min="0" step="1000" value="' + escapeAttr(j.salary || "") + '" class="' + inputCls + '" placeholder="180000">') +
+        field("Referral Status", '<select name="referral" class="' + inputCls + '">' + refOpts + '</select>') +
+      '</div>' +
+      '<div class="grid grid-cols-2 gap-3">' +
+        field("Job Link", '<input name="link" type="url" value="' + escapeAttr(j.link || "") + '" class="' + inputCls + '" placeholder="https://...">') +
+        field("Status / Column", '<select name="status" class="' + inputCls + '">' + statusOpts + '</select>') +
+      '</div>' +
+      field("Notes", '<textarea name="notes" rows="2" class="' + inputCls + '" placeholder="Team, recruiter, anything to remember...">' + escapeHtml(j.notes || "") + '</textarea>') +
+      '<div><span class="text-[11px] uppercase tracking-wide text-muted font-semibold">Interview Sub-stages</span>' +
+        '<div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">' + subStageChecks + '</div></div>' +
+      (isEdit && j.history && j.history.length ?
+        '<div><span class="text-[11px] uppercase tracking-wide text-muted font-semibold">History</span><div class="mt-1 space-y-1 text-xs text-muted max-h-24 overflow-y-auto">' +
+          j.history.slice().reverse().map(h => '<div class="font-mono">' + escapeHtml(COLUMN_LABEL[h.from] || h.from) + ' → ' + escapeHtml(COLUMN_LABEL[h.to] || h.to) + ' · ' + fmtDate(h.ts) + '</div>').join("") +
+        '</div></div>' : "") +
+    '</form>' +
+    '<div class="flex items-center justify-between gap-3 px-5 py-4 border-t border-line">' +
+      (isEdit ? '<button id="mDelete" class="text-sm text-bad/80 hover:text-bad font-medium">Delete</button>' : '<span></span>') +
+      '<div class="flex gap-2">' +
+        '<button id="mCancel" class="px-4 py-2 rounded-lg text-sm text-muted hover:text-white border border-line">Cancel</button>' +
+        '<button form="jobForm" type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold bg-gradient-to-r from-accent to-accent2 text-white hover:brightness-110">' + (isEdit ? "Save Changes" : "Add Application") + '</button>' +
+      '</div>' +
+    '</div>',
+    { size: "max-w-2xl" }
+  );
+
+  document.getElementById("mClose").onclick = closeModal;
+  document.getElementById("mCancel").onclick = closeModal;
+  if (isEdit) {
+    document.getElementById("mDelete").onclick = async () => {
+      if (confirm("Delete the application to " + (j.company || "this company") + "? This cannot be undone.")) {
+        try {
+          await repo.deleteJob(j.id);
+          closeModal();
+          commit();
+          toast("Application deleted.", "warn");
+        } catch (err) { toast("Could not delete: " + err.message, "bad"); }
+      }
+    };
+  }
+
+  document.getElementById("jobForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const f = e.target;
+    const company = f.company.value.trim();
+    if (!company) { toast("Company name is required.", "bad"); f.company.focus(); return; }
+    const salaryRaw = f.salary.value.trim();
+    if (salaryRaw && (isNaN(Number(salaryRaw)) || Number(salaryRaw) < 0)) { toast("Salary must be a positive number.", "bad"); return; }
+    const link = f.link.value.trim();
+    if (link && !/^https?:\/\//i.test(link)) { toast("Job link must start with http:// or https://", "bad"); return; }
+
+    const subStages = {};
+    f.querySelectorAll("[data-sub]").forEach(cb => { subStages[cb.getAttribute("data-sub")] = cb.checked; });
+    const newStatus = f.status.value;
+    const payload = {
+      company, role: f.role.value, stack: parseStack(f.stack.value),
+      salary: salaryRaw ? Number(salaryRaw) : "", referral: f.referral.value, link,
+      notes: f.notes.value.trim(), status: newStatus, subStages
+    };
+
+    const submitBtn = f.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.disabled = true;
+    try {
+      if (isEdit) {
+        await repo.updateJob(j.id, payload);
+        closeModal();
+        commit();
+        toast("Application updated.", "good");
+      } else {
+        await repo.createJob(payload);
+        closeModal();
+        commit();
+        toast(company + " added to " + COLUMN_LABEL[newStatus] + ".", "good");
+      }
+    } catch (err) {
+      if (submitBtn) submitBtn.disabled = false;
+      toast("Could not save: " + err.message, "bad");
+    }
+  };
+}
+
+/* ======================================================================
+   VIEW 2 — AI PREP & JD MATCHER  (rule-based deterministic engine)
+   ====================================================================== */
+const ALGO_RULES = [
+  { kw: ["stream", "streaming", "real-time", "realtime", "real time", "throughput"], topic: "Sliding Window & Queue / Stream Processing", why: "Streaming/real-time data implies bounded-window aggregation." },
+  { kw: ["cache", "caching", "lru", "lfu", "memoize"], topic: "Hash Map + Doubly Linked List (LRU/LFU)", why: "Caching mentions map directly to LRU/LFU cache design." },
+  { kw: ["graph", "network", "dependency", "topolog", "route", "routing", "social"], topic: "Graphs — BFS / DFS / Dijkstra / Topological Sort", why: "Graph/dependency language signals traversal & shortest-path problems." },
+  { kw: ["tree", "hierarch", "nested", "parse", "json", "ast"], topic: "Trees & Recursion / Tries", why: "Hierarchical or parsing work maps to tree recursion." },
+  { kw: ["sort", "rank", "leaderboard", "order", "top k", "top-k"], topic: "Sorting & Heaps (Top-K, priority queues)", why: "Ranking/ordering implies heaps and partial sorts." },
+  { kw: ["schedule", "interval", "calendar", "booking", "meeting"], topic: "Greedy & Interval Scheduling", why: "Scheduling/booking maps to interval merge/greedy patterns." },
+  { kw: ["search", "lookup", "autocomplete", "typeahead", "index"], topic: "Binary Search / Tries / Inverted Index", why: "Search/autocomplete signals binary search & prefix trees." },
+  { kw: ["optimi", "maximi", "minimi", "best", "minimum cost", "maximum"], topic: "Dynamic Programming & Greedy", why: "Optimization wording is the classic DP/greedy tell." },
+  { kw: ["concurren", "parallel", "thread", "lock", "race", "async"], topic: "Concurrency — Locks, Semaphores, Producer/Consumer", why: "Concurrency keywords require synchronization patterns." },
+  { kw: ["match", "pattern", "regex", "string", "substring", "token"], topic: "Strings — Two Pointers, KMP, Tries", why: "String/pattern work maps to two-pointer & matching algorithms." },
+  { kw: ["count", "frequency", "duplicate", "unique", "anagram"], topic: "Hashing & Frequency Maps", why: "Counting/uniqueness problems lean on hash maps." }
+];
+const SYSDESIGN_RULES = [
+  { kw: ["scale", "scalab", "million", "billion", "high traffic", "high-traffic", "qps", "rps", "growth"], topic: "Horizontal Scaling & Load Balancing", why: "High scale requires stateless services behind load balancers." },
+  { kw: ["cache", "caching", "cdn", "redis", "latency", "fast"], topic: "Caching Layers (CDN, Redis, write-through/back)", why: "Latency/caching mentions need a deliberate cache strategy." },
+  { kw: ["database", "sql", "nosql", "postgres", "mysql", "dynamo", "mongo", "storage", "persist"], topic: "Data Modeling, Sharding & Replication", why: "Storage at scale needs partitioning & replication strategy." },
+  { kw: ["queue", "kafka", "event", "async", "pub", "sub", "message", "stream"], topic: "Message Queues & Event-Driven Architecture", why: "Async/event language implies Kafka/SQS-style decoupling." },
+  { kw: ["api", "rest", "graphql", "grpc", "endpoint", "gateway"], topic: "API Gateway, Rate Limiting & Versioning", why: "API-heavy roles test gateway, throttling & contract design." },
+  { kw: ["search", "elasticsearch", "index", "ranking", "recommend"], topic: "Search Indexing & Ranking (Elasticsearch, inverted index)", why: "Search/recommendation needs indexing & relevance ranking." },
+  { kw: ["feed", "timeline", "notification", "fan-out", "fanout", "social"], topic: "Feed Generation & Fan-out (push vs pull)", why: "Feeds/notifications hinge on fan-out tradeoffs." },
+  { kw: ["payment", "transaction", "billing", "order", "checkout", "money", "ledger"], topic: "ACID, Idempotency & Exactly-Once Processing", why: "Money flows demand idempotency and strong consistency." },
+  { kw: ["video", "image", "file", "upload", "media", "blob"], topic: "Blob Storage, CDN & Chunked Uploads", why: "Media handling needs object storage + CDN delivery." },
+  { kw: ["monitor", "observab", "metric", "logging", "alert", "trace"], topic: "Observability — Metrics, Logging & Tracing", why: "Reliability roles probe monitoring & alerting design." },
+  { kw: ["microservice", "distributed", "service mesh", "kubernetes", "container"], topic: "Microservices, Service Discovery & Resilience", why: "Distributed systems test decomposition & failure handling." }
+];
+const STOPWORDS = new Set(["the","and","for","with","you","your","our","are","will","that","this","have","from","who","what","when","where","into","across","over","their","them","they","using","use","used","work","working","team","teams","build","building","help","make","including","etc","new","role","roles","strong","plus","years","year","experience","ability","able","skills","skill","knowledge","understanding","good","great","excellent","must","should","would","candidate","candidates","looking","seeking","join","within","while","also","such","like","well","more","most","many","ensure","drive","deliver","develop","developing","design","designing","based","across","per","via"]);
+
+function tokenize(text) {
+  return String(text || "").toLowerCase().match(/[a-z0-9][a-z0-9+#.\-]*/g) || [];
+}
+function escapeRe(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+/* word-aware presence: skill must not be flanked by alphanumerics ("go" ≠ "django") */
+function skillPresent(text, skill) {
+  try {
+    const re = new RegExp("(?:^|[^a-z0-9])" + escapeRe(String(skill).toLowerCase()) + "(?![a-z0-9])", "i");
+    return re.test(String(text).toLowerCase());
+  } catch (e) { return String(text).toLowerCase().includes(String(skill).toLowerCase()); }
+}
+function topKeywords(text, n) {
+  const counts = {};
+  tokenize(text).forEach(w => {
+    const clean = w.replace(/[.\-]+$/, "");
+    if (clean.length < 3 || STOPWORDS.has(clean)) return;
+    counts[clean] = (counts[clean] || 0) + 1;
+  });
+  return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, n).map(e => e[0]);
+}
+function matchRules(rules, lowerJd) {
+  const hits = [];
+  rules.forEach(r => {
+    const found = r.kw.find(k => lowerJd.includes(k));
+    if (found) hits.push({ topic: r.topic, why: r.why, trigger: found });
+  });
+  // dedupe by topic
+  const seen = new Set();
+  return hits.filter(h => { if (seen.has(h.topic)) return false; seen.add(h.topic); return true; });
+}
+const KNOWN_SKILLS = ["react","angular","vue","svelte","typescript","javascript","node.js","node","python","java","go","golang","rust","c++","c#","ruby","php","kotlin","swift","scala",
+  "aws","gcp","azure","docker","kubernetes","terraform","graphql","grpc","rest","postgresql","postgres","mysql","mongodb","dynamodb","redis","kafka","rabbitmq","elasticsearch",
+  "spark","hadoop","tensorflow","pytorch","next.js","nextjs","express","django","flask","spring","rails","tailwind","redux","webpack","vite","ci/cd","jenkins","git","linux","sql","nosql"];
+/* longer skills first so "node.js"/"postgresql" win over "node"/"postgres" substrings */
+const KNOWN_SORTED = KNOWN_SKILLS.slice().sort((a, b) => b.length - a.length);
+function skillMatch(resume, jd) {
+  const seenJd = new Set();
+  const inJd = [];
+  KNOWN_SORTED.forEach(k => {
+    if (skillPresent(jd, k) && !seenJd.has(k)) { seenJd.add(k); inJd.push(k); }
+  });
+  const matched = inJd.filter(k => skillPresent(resume, k));
+  const gaps = inJd.filter(k => !matched.includes(k));
+  return { matched: [...new Set(matched)], gaps: [...new Set(gaps)], inJd: [...new Set(inJd)] };
+}
+function guessCompany(jd) {
+  const m = String(jd).match(/(?:at|join|with)\s+([A-Z][A-Za-z0-9&.\- ]{1,28})(?:[.,!\n]|'s|\s+is\b|\s+we\b)/);
+  if (m) return m[1].trim().replace(/\s+(is|we|are|team)$/i, "").trim();
+  return "";
+}
+function guessRole(jd) {
+  const text = String(jd);
+  // 1) qualified role (e.g. "Senior Backend Engineer", "Full-Stack Developer")
+  let m = text.match(/((?:senior|staff|principal|lead|junior|sr\.?|jr\.?|entry[\- ]?level)\s+)?((?:software|frontend|front[\- ]end|backend|back[\- ]end|full[\- ]?stack|mobile|ios|android|data|ml|machine learning|platform|devops|site reliability|cloud|web|security|embedded)\s+)(engineer|developer|sde\b|programmer)/i);
+  if (m) return m[0].replace(/\s+/g, " ").trim();
+  // 2) bare "Software Engineer" / "Developer" / "SDE"
+  m = text.match(/((?:senior|staff|principal|lead|junior)\s+)?(software\s+engineer|developer|engineer|sde\b)/i);
+  if (m) return m[0].replace(/\s+/g, " ").trim();
+  return "Software Engineer";
+}
+
+function generateCoverLetter(jd, resume, opts) {
+  const company = opts.company || "your company";
+  const role = opts.role || "Software Engineer";
+  const matched = opts.matched.slice(0, 6);
+  const gaps = opts.gaps.slice(0, 4);
+  const keywords = opts.keywords.slice(0, 6);
+  const strengths = matched.length ? matched.map(s => s.toUpperCase()).join(", ") : "my core engineering toolkit";
+
+  const lines = [];
+  lines.push("Dear " + company + " Hiring Team,");
+  lines.push("");
+  lines.push("I'm excited to apply for the " + role + " role. The posting emphasizes " +
+    (keywords.length ? keywords.slice(0, 3).join(", ") : "building high-quality software") +
+    ", which maps directly to where I do my best work.");
+  lines.push("");
+  lines.push("OPENING HOOK — pick one concrete win that mirrors the JD:");
+  lines.push("  • Quantify impact (latency cut, users served, revenue, reliability).");
+  lines.push("  • Tie it to " + (keywords[0] || "the core problem") + " mentioned in the description.");
+  lines.push("");
+  lines.push("STACK ALIGNMENT — your matched strengths:");
+  if (matched.length) matched.forEach(s => lines.push("  • " + s.toUpperCase() + " — give one shipped example using it."));
+  else lines.push("  • Map each primary technology in your resume to a JD requirement.");
+  lines.push("");
+  if (gaps.length) {
+    lines.push("GAPS TO ADDRESS PROACTIVELY (" + gaps.map(g => g.toUpperCase()).join(", ") + "):");
+    lines.push("  • Show adjacent experience or a fast-ramp story — don't hide the gap, frame the learning curve.");
+    lines.push("");
+  }
+  lines.push("WHY " + company.toUpperCase() + " — show you researched the product, team, or engineering culture.");
+  lines.push("");
+  lines.push("CLOSE — restate fit in one line and request the conversation.");
+  lines.push("");
+  lines.push("Built with: " + strengths + ".");
+  lines.push("Best regards,");
+  lines.push("[Your Name]");
+  return lines.join("\n");
+}
+
+function renderAI(host) {
+  const jd = STATE.aiCache.jd || "";
+  const resume = STATE.aiCache.resume || STATE.resumeStack || "";
+  host.innerHTML =
+    '<div class="h-full overflow-y-auto p-4 md:p-6">' +
+      '<div class="grid lg:grid-cols-2 gap-4 max-w-6xl mx-auto">' +
+        '<div class="bg-panel rounded-2xl border border-line p-4 flex flex-col">' +
+          '<label class="text-sm font-semibold text-white flex items-center gap-2 mb-2"><span class="w-2 h-2 rounded-full bg-accent"></span>Paste Job Description</label>' +
+          '<textarea id="jdInput" rows="10" class="flex-1 w-full bg-ink border border-line rounded-xl px-3 py-2 text-sm text-slate-200 focus:border-accent outline-none font-mono leading-relaxed" placeholder="Paste the full job description here...">' + escapeHtml(jd) + '</textarea>' +
+        '</div>' +
+        '<div class="bg-panel rounded-2xl border border-line p-4 flex flex-col">' +
+          '<label class="text-sm font-semibold text-white flex items-center gap-2 mb-2"><span class="w-2 h-2 rounded-full bg-accent2"></span>Your Tech Stack / Resume Summary</label>' +
+          '<textarea id="resumeInput" rows="10" class="flex-1 w-full bg-ink border border-line rounded-xl px-3 py-2 text-sm text-slate-200 focus:border-accent2 outline-none font-mono leading-relaxed" placeholder="List your technologies & a few resume highlights...">' + escapeHtml(resume) + '</textarea>' +
+        '</div>' +
+      '</div>' +
+      '<div class="max-w-6xl mx-auto mt-4 flex flex-wrap items-center gap-3">' +
+        '<button id="genBtn" class="px-5 py-2.5 rounded-lg bg-gradient-to-r from-accent to-accent2 text-white font-semibold text-sm shadow-lg shadow-accent/20 hover:brightness-110 active:scale-95 transition flex items-center gap-2">' +
+          '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.5 3l1.5 4 4 1.5-4 1.5L9.5 14 8 10 4 8.5 8 7z"/></svg>Generate Prep Kit</button>' +
+        '<span class="text-xs text-muted">Deterministic rule-based engine — runs instantly, fully offline.</span>' +
+      '</div>' +
+      '<div id="aiOut" class="max-w-6xl mx-auto mt-4"></div>' +
+    '</div>';
+
+  const jdEl = document.getElementById("jdInput");
+  const resEl = document.getElementById("resumeInput");
+  jdEl.addEventListener("input", () => { STATE.aiCache.jd = jdEl.value; scheduleSave({ aiCache: STATE.aiCache }); });
+  resEl.addEventListener("input", () => { STATE.aiCache.resume = resEl.value; scheduleSave({ aiCache: STATE.aiCache }); });
+  document.getElementById("genBtn").onclick = () => runAIGenerate(jdEl.value, resEl.value);
+
+  if (jd.trim()) runAIGenerate(jd, resume);
+}
+
+function runAIGenerate(jd, resume) {
+  const out = document.getElementById("aiOut");
+  if (!out) return;
+  if (!jd.trim()) { toast("Paste a job description first.", "warn"); return; }
+
+  const lowerJd = jd.toLowerCase();
+  const algo = matchRules(ALGO_RULES, lowerJd);
+  const sys = matchRules(SYSDESIGN_RULES, lowerJd);
+  const sm = skillMatch(resume, jd);
+  const keywords = topKeywords(jd, 12);
+  const company = guessCompany(jd);
+  const role = guessRole(jd);
+  const cover = generateCoverLetter(jd, resume, { company, role, matched: sm.matched, gaps: sm.gaps, keywords });
+
+  const matchPct = sm.inJd.length ? Math.round((sm.matched.length / sm.inJd.length) * 100) : 0;
+
+  const chip = (text, cls) => '<span class="text-xs px-2 py-1 rounded-md ' + cls + '">' + escapeHtml(text) + '</span>';
+  const algoHTML = algo.length ? algo.map(a =>
+    '<div class="bg-panel2 border border-line rounded-xl p-3"><div class="font-semibold text-sm text-white">' + escapeHtml(a.topic) + '</div>' +
+    '<div class="text-xs text-muted mt-1">' + escapeHtml(a.why) + '</div>' +
+    '<div class="text-[10px] font-mono text-accent mt-1">matched: "' + escapeHtml(a.trigger) + '"</div></div>'
+  ).join("") : '<div class="text-sm text-muted">No strong algorithmic signals detected — default to Arrays, Hashing, Two Pointers, and Trees.</div>';
+
+  const sysHTML = sys.length ? sys.map(a =>
+    '<div class="bg-panel2 border border-line rounded-xl p-3"><div class="font-semibold text-sm text-white">' + escapeHtml(a.topic) + '</div>' +
+    '<div class="text-xs text-muted mt-1">' + escapeHtml(a.why) + '</div>' +
+    '<div class="text-[10px] font-mono text-accent2 mt-1">matched: "' + escapeHtml(a.trigger) + '"</div></div>'
+  ).join("") : '<div class="text-sm text-muted">No strong system-design signals — prepare a general scalable web service (LB → stateless app → cache → sharded DB).</div>';
+
+  out.innerHTML =
+    '<div class="fade-in grid lg:grid-cols-2 gap-4">' +
+      // Summary card
+      '<div class="lg:col-span-2 bg-panel rounded-2xl border border-line p-4">' +
+        '<div class="flex flex-wrap items-center justify-between gap-3">' +
+          '<div><div class="text-xs text-muted uppercase tracking-wide font-semibold">Detected Target</div>' +
+            '<div class="text-lg font-bold text-white">' + escapeHtml(role) + (company ? ' <span class="text-muted">@ ' + escapeHtml(company) + '</span>' : "") + '</div></div>' +
+          '<div class="text-right"><div class="text-xs text-muted uppercase tracking-wide font-semibold">Stack Match</div>' +
+            '<div class="text-2xl font-bold ' + (matchPct >= 60 ? "text-good" : matchPct >= 30 ? "text-warn" : "text-bad") + '">' + matchPct + '%</div></div>' +
+        '</div>' +
+        '<div class="mt-3"><div class="text-[11px] uppercase tracking-wide text-muted font-semibold mb-1">Matched skills</div>' +
+          '<div class="flex flex-wrap gap-1.5">' + (sm.matched.length ? sm.matched.map(s => chip(s, "bg-good/15 text-good border border-good/30")).join("") : '<span class="text-xs text-muted">none — add these to your resume summary</span>') + '</div></div>' +
+        (sm.gaps.length ? '<div class="mt-3"><div class="text-[11px] uppercase tracking-wide text-muted font-semibold mb-1">Gaps to address</div>' +
+          '<div class="flex flex-wrap gap-1.5">' + sm.gaps.map(s => chip(s, "bg-bad/15 text-bad border border-bad/30")).join("") + '</div></div>' : "") +
+        '<div class="mt-3"><div class="text-[11px] uppercase tracking-wide text-muted font-semibold mb-1">Top JD keywords</div>' +
+          '<div class="flex flex-wrap gap-1.5">' + keywords.map(s => chip(s, "bg-panel2 border border-line text-slate-300")).join("") + '</div></div>' +
+      '</div>' +
+      // Cover letter
+      '<div class="bg-panel rounded-2xl border border-line p-4 flex flex-col">' +
+        '<div class="flex items-center justify-between mb-2"><h3 class="font-semibold text-white text-sm">Tailored Cover Letter Outline</h3>' +
+          '<button id="copyCover" class="text-xs px-2 py-1 rounded-md bg-panel2 border border-line text-muted hover:text-white">Copy</button></div>' +
+        '<pre id="coverText" class="flex-1 bg-ink border border-line rounded-xl p-3 text-xs text-slate-200 whitespace-pre-wrap font-mono leading-relaxed overflow-y-auto max-h-80">' + escapeHtml(cover) + '</pre>' +
+      '</div>' +
+      // Flashcards
+      '<div class="bg-panel rounded-2xl border border-line p-4">' +
+        '<h3 class="font-semibold text-white text-sm mb-2">Tech Interview Flashcard Cheat Sheet</h3>' +
+        '<div class="text-[11px] uppercase tracking-wide text-accent font-semibold mb-2">Likely Algorithmic Topics</div>' +
+        '<div class="space-y-2">' + algoHTML + '</div>' +
+        '<div class="text-[11px] uppercase tracking-wide text-accent2 font-semibold mt-4 mb-2">Likely System Design Topics</div>' +
+        '<div class="space-y-2">' + sysHTML + '</div>' +
+      '</div>' +
+    '</div>';
+
+  const copyBtn = document.getElementById("copyCover");
+  if (copyBtn) copyBtn.onclick = () => copyText(cover, "Cover letter outline copied.");
+  toast("Prep kit generated.", "good");
+}
+
+function copyText(text, okMsg) {
+  const done = () => toast(okMsg || "Copied.", "good");
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+  } else { fallbackCopy(text, done); }
+}
+function fallbackCopy(text, done) {
+  const ta = document.createElement("textarea");
+  ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand("copy"); done(); } catch (e) { toast("Copy failed — select manually.", "bad"); }
+  ta.remove();
+}
+
+/* ======================================================================
+   VIEW 3 — LEETCODE & SYSTEM DESIGN TRACKER
+   ====================================================================== */
+function renderPrep(host) {
+  const byDiff = { Easy: 0, Medium: 0, Hard: 0 };
+  STATE.leetcode.forEach(p => { byDiff[p.difficulty] = (byDiff[p.difficulty] || 0) + 1; });
+  const byTopic = {};
+  STATE.leetcode.forEach(p => { byTopic[p.topic] = (byTopic[p.topic] || 0) + 1; });
+
+  const diffColors = { Easy: "#34d399", Medium: "#fbbf24", Hard: "#f87171" };
+  const progressCards = DIFFICULTIES.map(d => {
+    const goal = STATE.goals[d] || 0;
+    const done = byDiff[d] || 0;
+    const pct = goal > 0 ? clampNum(Math.round((done / goal) * 100), 0, 100) : 0;
+    return (
+      '<div class="bg-panel2 border border-line rounded-xl p-4">' +
+        '<div class="flex items-center justify-between mb-2"><span class="font-semibold text-white text-sm">' + d + '</span>' +
+          '<span class="text-xs font-mono text-muted">' + done + ' / <input data-goal="' + d + '" type="number" min="0" value="' + goal + '" class="w-12 bg-ink border border-line rounded px-1 py-0.5 text-center text-white"></span></div>' +
+        '<div class="h-2.5 rounded-full bg-ink overflow-hidden"><div class="h-full rounded-full transition-all" style="width:' + pct + '%;background:' + diffColors[d] + '"></div></div>' +
+        '<div class="text-right text-[11px] text-muted mt-1">' + pct + '%</div>' +
+      '</div>'
+    );
+  }).join("");
+
+  const topicBars = DSA_TOPICS.filter(t => byTopic[t]).sort((a, b) => byTopic[b] - byTopic[a]).map(t => {
+    const c = byTopic[t];
+    const max = Math.max.apply(null, Object.values(byTopic).concat([1]));
+    const pct = clampNum(Math.round((c / max) * 100), 4, 100);
+    return '<div class="flex items-center gap-2"><span class="text-xs text-slate-300 w-32 truncate">' + escapeHtml(t) + '</span>' +
+      '<div class="flex-1 h-2 rounded-full bg-ink overflow-hidden"><div class="h-full rounded-full bg-accent" style="width:' + pct + '%"></div></div>' +
+      '<span class="text-xs font-mono text-muted w-6 text-right">' + c + '</span></div>';
+  }).join("") || '<div class="text-xs text-muted">Log problems to see topic distribution.</div>';
+
+  const rows = STATE.leetcode.slice().reverse().map(p => {
+    const dc = { Easy: "text-good", Medium: "text-warn", Hard: "text-bad" }[p.difficulty] || "text-muted";
+    const titleCell = p.url
+      ? '<a href="' + escapeAttr(p.url) + '" target="_blank" rel="noopener" class="text-accent hover:underline">' + escapeHtml(p.title) + '</a>'
+      : escapeHtml(p.title);
+    return '<tr class="border-b border-line/60 hover:bg-panel2/50">' +
+      '<td class="py-2 px-3 text-sm text-white">' + titleCell + '</td>' +
+      '<td class="py-2 px-3 text-sm font-semibold ' + dc + '">' + escapeHtml(p.difficulty) + '</td>' +
+      '<td class="py-2 px-3 text-sm text-slate-300">' + escapeHtml(p.topic) + '</td>' +
+      '<td class="py-2 px-3 text-xs text-muted">' + escapeHtml(p.date) + '</td>' +
+      '<td class="py-2 px-3 text-right"><button data-del-lc="' + p.id + '" class="text-bad/70 hover:text-bad text-xs">remove</button></td>' +
+      '</tr>';
+  }).join("") || '<tr><td colspan="5" class="py-6 text-center text-muted text-sm">No problems logged yet.</td></tr>';
+
+  const totalCS = CS_TOPICS.length;
+  const doneCS = CS_TOPICS.filter(t => STATE.csChecklist[t.key]).length;
+  const csPct = Math.round((doneCS / totalCS) * 100);
+  const csItems = CS_TOPICS.map(t =>
+    '<label class="flex items-center gap-3 bg-panel2 border border-line rounded-lg px-3 py-2.5 cursor-pointer hover:border-accent/40 transition">' +
+      '<input type="checkbox" data-cs="' + t.key + '" ' + (STATE.csChecklist[t.key] ? "checked" : "") + ' class="accent-good w-4 h-4">' +
+      '<span class="text-sm ' + (STATE.csChecklist[t.key] ? "text-white line-through/0" : "text-slate-300") + '">' + escapeHtml(t.label) + '</span>' +
+    '</label>').join("");
+
+  const topicOpts = DSA_TOPICS.map(t => '<option value="' + escapeAttr(t) + '">' + escapeHtml(t) + '</option>').join("");
+  const diffOpts = DIFFICULTIES.map(d => '<option value="' + d + '">' + d + '</option>').join("");
+
+  host.innerHTML =
+    '<div class="h-full overflow-y-auto p-4 md:p-6"><div class="max-w-6xl mx-auto space-y-4">' +
+      '<div class="grid md:grid-cols-3 gap-4">' + progressCards + '</div>' +
+      '<div class="grid lg:grid-cols-3 gap-4">' +
+        '<div class="lg:col-span-2 bg-panel rounded-2xl border border-line p-4">' +
+          '<div class="flex items-center justify-between mb-3"><h3 class="font-semibold text-white text-sm">LeetCode / HackerRank Log</h3>' +
+            '<span class="text-xs font-mono text-muted">' + STATE.leetcode.length + ' solved</span></div>' +
+          '<form id="lcForm" class="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3">' +
+            '<input name="title" required placeholder="Problem title" class="col-span-2 bg-ink border border-line rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-accent">' +
+            '<select name="difficulty" class="bg-ink border border-line rounded-lg px-2 py-2 text-sm text-white outline-none focus:border-accent">' + diffOpts + '</select>' +
+            '<select name="topic" class="bg-ink border border-line rounded-lg px-2 py-2 text-sm text-white outline-none focus:border-accent">' + topicOpts + '</select>' +
+            '<button type="submit" class="bg-accent/20 border border-accent/40 text-accent rounded-lg text-sm font-semibold hover:bg-accent/30">+ Log</button>' +
+            '<input name="url" placeholder="Optional URL (https://...)" class="col-span-2 sm:col-span-5 bg-ink border border-line rounded-lg px-3 py-2 text-xs text-slate-300 outline-none focus:border-accent">' +
+          '</form>' +
+          '<div class="overflow-x-auto"><table class="w-full"><thead><tr class="text-left text-[11px] uppercase tracking-wide text-muted border-b border-line">' +
+            '<th class="py-2 px-3">Problem</th><th class="py-2 px-3">Difficulty</th><th class="py-2 px-3">Topic</th><th class="py-2 px-3">Date</th><th class="py-2 px-3"></th>' +
+          '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+        '</div>' +
+        '<div class="bg-panel rounded-2xl border border-line p-4">' +
+          '<h3 class="font-semibold text-white text-sm mb-3">Topic Distribution</h3>' +
+          '<div class="space-y-2">' + topicBars + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="bg-panel rounded-2xl border border-line p-4">' +
+        '<div class="flex items-center justify-between mb-3"><h3 class="font-semibold text-white text-sm">System Design & CS Fundamentals</h3>' +
+          '<div class="flex items-center gap-2"><div class="w-28 h-2 rounded-full bg-ink overflow-hidden"><div class="h-full bg-good rounded-full transition-all" style="width:' + csPct + '%"></div></div>' +
+          '<span class="text-xs font-mono text-good">' + doneCS + '/' + totalCS + '</span></div></div>' +
+        '<div class="grid sm:grid-cols-2 gap-2">' + csItems + '</div>' +
+      '</div>' +
+    '</div></div>';
+
+  // wire goals (debounced profile save)
+  host.querySelectorAll("[data-goal]").forEach(inp => {
+    inp.onchange = () => {
+      STATE.goals[inp.getAttribute("data-goal")] = clampNum(inp.value, 0, 100000);
+      scheduleSave({ goals: STATE.goals });
+      commit();
+    };
+    inp.onclick = (e) => e.stopPropagation();
+  });
+  // wire CS checklist (debounced profile save)
+  host.querySelectorAll("[data-cs]").forEach(cb => {
+    cb.onchange = () => {
+      STATE.csChecklist[cb.getAttribute("data-cs")] = cb.checked;
+      scheduleSave({ csChecklist: STATE.csChecklist });
+      commit();
+    };
+  });
+  // wire delete lc
+  host.querySelectorAll("[data-del-lc]").forEach(b => {
+    b.onclick = () => mutate(() => repo.deleteLeetcode(b.getAttribute("data-del-lc")), "Could not remove")
+      .then(() => toast("Problem removed.", "warn"));
+  });
+  // wire log form
+  const form = document.getElementById("lcForm");
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const f = e.target;
+    const title = f.title.value.trim();
+    if (!title) { toast("Problem title required.", "bad"); return; }
+    const url = f.url.value.trim();
+    if (url && !/^https?:\/\//i.test(url)) { toast("URL must start with http(s)://", "bad"); return; }
+    try {
+      await repo.createLeetcode({ title, difficulty: f.difficulty.value, topic: f.topic.value, url, date: todayStr() });
+      commit();
+      toast('Logged "' + title + '".', "good");
+    } catch (err) { toast("Could not log problem: " + err.message, "bad"); }
+  };
+}
+
+/* ======================================================================
+   VIEW 4 — RECRUITER CRM (HR CONTACTS)
+   ====================================================================== */
+let crmSearch = "";
+function renderCRM(host) {
+  const q = crmSearch.toLowerCase();
+  const contacts = STATE.contacts.filter(c =>
+    !q || (c.name + " " + c.company + " " + c.title + " " + c.email + " " + c.source).toLowerCase().includes(q)
+  );
+
+  const cards = contacts.length ? contacts.map(c => contactCardHTML(c)).join("") :
+    '<div class="col-span-full text-center text-muted text-sm py-12 border border-dashed border-line rounded-2xl">' +
+      (crmSearch ? "No contacts match your search." : "No HR contacts yet. Import from your Claude + Apify flow or add manually.") + '</div>';
+
+  host.innerHTML =
+    '<div class="h-full overflow-y-auto p-4 md:p-6"><div class="max-w-6xl mx-auto space-y-4">' +
+      // Import panel
+      '<div class="bg-panel rounded-2xl border border-line p-4">' +
+        '<div class="flex items-start justify-between gap-3 flex-wrap">' +
+          '<div><h3 class="font-semibold text-white text-sm flex items-center gap-2">' +
+            '<svg class="w-4 h-4 text-accent2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>' +
+            'Import HR Contacts (from Claude + Apify)</h3>' +
+            '<p class="text-xs text-muted mt-1 max-w-2xl">Paste what your Claude connector returned — either a <b class="text-slate-300">JSON array</b> of contacts, or free-form text with lines like <span class="font-mono text-accent">Name: … Email: … Company: …</span>. The parser stores them in your local database.</p></div>' +
+          '<button id="addContactBtn" class="px-3 py-2 rounded-lg bg-gradient-to-r from-accent to-accent2 text-white text-sm font-semibold hover:brightness-110 whitespace-nowrap">+ Add Manually</button>' +
+        '</div>' +
+        '<textarea id="importBox" rows="5" class="mt-3 w-full bg-ink border border-line rounded-xl px-3 py-2 text-xs text-slate-200 font-mono outline-none focus:border-accent2" placeholder=\'[{"name":"Jane Doe","title":"Recruiter","company":"Acme","email":"jane@acme.com","linkedin":"https://...","phone":"+1...","notes":"..."}]\n\n— or —\n\nName: Jane Doe\nTitle: Technical Recruiter\nCompany: Acme\nEmail: jane@acme.com\nPhone: +1 555 0100\nLinkedIn: https://linkedin.com/in/jane\'></textarea>' +
+        '<div class="flex flex-wrap items-center gap-2 mt-3">' +
+          '<button id="parseImportBtn" class="px-4 py-2 rounded-lg bg-accent/20 border border-accent/40 text-accent text-sm font-semibold hover:bg-accent/30">Parse & Store Contacts</button>' +
+          '<button id="loadSampleBtn" class="px-3 py-2 rounded-lg border border-line text-muted hover:text-white text-sm">Load Sample Format</button>' +
+          '<span class="text-xs text-muted">Stored in localStorage — your private database.</span>' +
+        '</div>' +
+      '</div>' +
+      // search + count
+      '<div class="flex items-center justify-between gap-3">' +
+        '<div class="relative flex-1 max-w-md">' +
+          '<svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>' +
+          '<input id="crmSearch" value="' + escapeAttr(crmSearch) + '" placeholder="Search HR contacts..." class="w-full bg-panel border border-line rounded-lg pl-9 pr-3 py-2 text-sm text-white outline-none focus:border-accent">' +
+        '</div>' +
+        '<span id="crmCount" class="text-xs font-mono text-muted">' + contacts.length + ' / ' + STATE.contacts.length + ' contacts</span>' +
+      '</div>' +
+      // contact grid
+      '<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">' + cards + '</div>' +
+    '</div></div>';
+
+  // wire
+  const search = document.getElementById("crmSearch");
+  search.oninput = () => { crmSearch = search.value; renderCRMGridOnly(host); };
+  document.getElementById("addContactBtn").onclick = () => openContactModal(null);
+  document.getElementById("parseImportBtn").onclick = () => {
+    const raw = document.getElementById("importBox").value;
+    importContacts(raw);
+  };
+  document.getElementById("loadSampleBtn").onclick = () => {
+    document.getElementById("importBox").value =
+      '[\n  {"name":"Jane Doe","title":"Technical Recruiter","company":"Acme","email":"jane@acme.com","phone":"+1 555 0100","linkedin":"https://linkedin.com/in/jane","notes":"Owns backend reqs"},\n' +
+      '  {"name":"Sam Patel","title":"Talent Partner","company":"Globex","email":"sam@globex.io","linkedin":"https://linkedin.com/in/sam"}\n]';
+  };
+  wireContactCards(host);
+}
+
+/* re-render only the grid + count when searching (keeps textarea focus) */
+function renderCRMGridOnly(host) {
+  const q = crmSearch.toLowerCase();
+  const contacts = STATE.contacts.filter(c =>
+    !q || (c.name + " " + c.company + " " + c.title + " " + c.email + " " + c.source).toLowerCase().includes(q)
+  );
+  const grid = host.querySelector(".grid.sm\\:grid-cols-2.lg\\:grid-cols-3");
+  const count = document.getElementById("crmCount");
+  if (count) count.textContent = contacts.length + " / " + STATE.contacts.length + " contacts";
+  if (grid) {
+    grid.innerHTML = contacts.length ? contacts.map(c => contactCardHTML(c)).join("") :
+      '<div class="col-span-full text-center text-muted text-sm py-12 border border-dashed border-line rounded-2xl">No contacts match your search.</div>';
+    wireContactCards(host);
+  }
+}
+
+function contactCardHTML(c) {
+  const job = c.jobId ? STATE.jobs.find(j => j.id === c.jobId) : null;
+  const initials = (c.name || "?").split(/\s+/).map(w => w[0]).join("").slice(0, 2).toUpperCase();
+  const emailOk = isValidEmail(c.email);
+  return (
+    '<div class="fade-in bg-panel rounded-2xl border border-line p-4 flex flex-col gap-3 hover:border-accent/40 transition">' +
+      '<div class="flex items-start gap-3">' +
+        '<div class="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-accent2 grid place-items-center text-white font-bold text-sm shrink-0">' + escapeHtml(initials) + '</div>' +
+        '<div class="min-w-0 flex-1">' +
+          '<div class="font-semibold text-white text-sm truncate">' + escapeHtml(c.name || "Unnamed") + '</div>' +
+          '<div class="text-xs text-muted truncate">' + escapeHtml(c.title || "—") + (c.company ? ' · ' + escapeHtml(c.company) : "") + '</div>' +
+        '</div>' +
+        '<button data-edit-contact="' + c.id + '" class="text-muted hover:text-white shrink-0" title="Edit">' +
+          '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4v16h16v-7M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
+      '</div>' +
+      '<div class="space-y-1 text-xs">' +
+        (c.email ? '<div class="flex items-center gap-2 text-slate-300 truncate"><svg class="w-3.5 h-3.5 text-muted shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>' + escapeHtml(c.email) + '</div>' : "") +
+        (c.phone ? '<div class="flex items-center gap-2 text-slate-300 truncate"><svg class="w-3.5 h-3.5 text-muted shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.8 19.8 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z"/></svg>' + escapeHtml(c.phone) + '</div>' : "") +
+        (c.linkedin ? '<div class="flex items-center gap-2 truncate"><svg class="w-3.5 h-3.5 text-muted shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5A2.5 2.5 0 002.5 6a2.5 2.5 0 005 0 2.5 2.5 0 00-2.52-2.5zM3 9h4v12H3zM10 9h3.8v1.7h.05c.53-1 1.83-2.05 3.77-2.05 4.03 0 4.78 2.65 4.78 6.1V21H18.6v-5.4c0-1.29-.02-2.95-1.8-2.95s-2.07 1.4-2.07 2.85V21H10z"/></svg><a href="' + escapeAttr(c.linkedin) + '" target="_blank" rel="noopener" class="text-accent hover:underline truncate">LinkedIn</a></div>' : "") +
+      '</div>' +
+      (job ? '<div class="text-[10px] font-mono px-2 py-1 rounded-md bg-panel2 border border-line text-muted">↳ ' + escapeHtml(job.company) + ' · ' + escapeHtml(COLUMN_LABEL[job.status]) + '</div>' : "") +
+      (c.source ? '<div class="text-[10px] text-muted">via ' + escapeHtml(c.source) + '</div>' : "") +
+      '<div class="flex gap-2 mt-auto pt-1">' +
+        '<button data-email-contact="' + c.id + '" ' + (emailOk ? "" : "disabled") + ' class="flex-1 text-xs py-2 rounded-lg font-semibold ' + (emailOk ? "bg-accent/20 border border-accent/40 text-accent hover:bg-accent/30" : "bg-panel2 border border-line text-muted/50 cursor-not-allowed") + ' flex items-center justify-center gap-1.5">' +
+          '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>Email</button>' +
+        '<button data-del-contact="' + c.id + '" class="px-3 text-xs py-2 rounded-lg border border-line text-bad/70 hover:text-bad hover:border-bad/40">Del</button>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function wireContactCards(host) {
+  host.querySelectorAll("[data-edit-contact]").forEach(b => {
+    b.onclick = () => { const c = STATE.contacts.find(x => x.id === b.getAttribute("data-edit-contact")); if (c) openContactModal(c); };
+  });
+  host.querySelectorAll("[data-del-contact]").forEach(b => {
+    b.onclick = async () => {
+      const id = b.getAttribute("data-del-contact");
+      const c = STATE.contacts.find(x => x.id === id);
+      if (c && confirm("Delete contact " + (c.name || "") + "?")) {
+        try { await repo.deleteContact(id); commit(); toast("Contact deleted.", "warn"); }
+        catch (err) { toast("Could not delete: " + err.message, "bad"); }
+      }
+    };
+  });
+  host.querySelectorAll("[data-email-contact]").forEach(b => {
+    b.onclick = () => { const c = STATE.contacts.find(x => x.id === b.getAttribute("data-email-contact")); if (c) openEmailModal(c); };
+  });
+}
+
+/* ---- Import parser: JSON array OR free-form key:value blocks ----
+   Parses client-side, then POSTs to /contacts/import which dedupes + stores
+   in MongoDB and returns the inserted documents (with real ids). ---- */
+async function importContacts(raw) {
+  raw = String(raw || "").trim();
+  if (!raw) { toast("Paste contact data first.", "warn"); return; }
+  let parsed = [];
+
+  // try JSON first — only treat as JSON if it yields an array/object of records
+  let jsonOk = false;
+  try {
+    const data = JSON.parse(raw);
+    const arr = Array.isArray(data) ? data
+      : (data && typeof data === "object") ? [data]
+      : null; // primitives (string/number/bool/null) fall through to text parser
+    if (arr) {
+      parsed = arr.filter(x => x && typeof x === "object").map(normalizeImported).filter(c => c.name || c.email);
+      jsonOk = true;
+    }
+  } catch (e) { jsonOk = false; }
+
+  // fallback: free-form text blocks separated by blank lines
+  if (!jsonOk) {
+    const blocks = raw.split(/\n\s*\n/);
+    blocks.forEach(block => {
+      const obj = {};
+      block.split(/\n/).forEach(line => {
+        // key may contain letters, spaces, hyphens, underscores, slashes (E-mail, phone_number, Job/Title)
+        const m = line.match(/^\s*([A-Za-z][A-Za-z _\-\/]*?)\s*[:\-=]\s*(.+)$/);
+        if (m) {
+          const key = m[1].trim().toLowerCase().replace(/[_\-\/]+/g, "");
+          const val = m[2].trim();
+          if (/name/.test(key) && !/company|user/.test(key)) obj.name = val;
+          else if (/title|role|position/.test(key)) obj.title = val;
+          else if (/company|org/.test(key)) obj.company = val;
+          else if (/e-?mail/.test(key)) obj.email = val;
+          else if (/phone|tel|mobile/.test(key)) obj.phone = val;
+          else if (/linkedin|profile|url|link/.test(key)) obj.linkedin = val;
+          else if (/note|comment/.test(key)) obj.notes = val;
+          else if (/source/.test(key)) obj.source = val;
+        }
+      });
+      // also scrape a bare email if none captured
+      if (!obj.email) { const em = block.match(/[^\s@]+@[^\s@]+\.[^\s@]+/); if (em) obj.email = em[0]; }
+      if (obj.name || obj.email) parsed.push(normalizeImported(obj));
+    });
+  }
+
+  if (!parsed.length) { toast("Could not parse any contacts. Check the format.", "bad"); return; }
+
+  // server dedupes (by email, else name+company) and persists to MongoDB
+  try {
+    const result = await repo.importContacts(parsed);
+    commit();
+    const box = document.getElementById("importBox");
+    if (box) box.value = "";
+    const added = result.added || 0, skipped = result.skipped || 0;
+    toast("Imported " + added + " contact" + (added === 1 ? "" : "s") + (skipped ? " · " + skipped + " duplicate skipped" : "") + ".", added ? "good" : "warn");
+  } catch (err) {
+    toast("Import failed: " + err.message, "bad");
+  }
+}
+
+function normalizeImported(o) {
+  o = o || {};
+  // tolerate varied key casings from connectors
+  const pick = (...keys) => {
+    for (const k of keys) {
+      for (const actual in o) {
+        if (actual.toLowerCase().replace(/[^a-z0-9]/g, "") === k) return o[actual];
+      }
+    }
+    return "";
+  };
+  return {
+    id: uid("hr"),
+    name: String(pick("name", "fullname", "contactname") || o.name || "").trim(),
+    title: String(pick("title", "role", "position", "jobtitle") || "").trim(),
+    company: String(pick("company", "organization", "org", "employer") || "").trim(),
+    email: String(pick("email", "emailaddress", "mail") || "").trim(),
+    phone: String(pick("phone", "phonenumber", "tel", "mobile") || "").trim(),
+    linkedin: String(pick("linkedin", "linkedinurl", "profile", "profileurl") || "").trim(),
+    source: String(pick("source") || "Apify / Claude connector").trim(),
+    notes: String(pick("notes", "note", "comment", "comments") || "").trim(),
+    jobId: null,
+    dateAdded: nowISO()
+  };
+}
+
+/* ---- Add / Edit Contact Modal ---- */
+function openContactModal(contact) {
+  const isEdit = !!contact;
+  const c = contact || {};
+  const inputCls = "mt-1 w-full bg-ink border border-line rounded-lg px-3 py-2 text-sm text-white focus:border-accent outline-none";
+  const field = (label, inner) => '<label class="block"><span class="text-[11px] uppercase tracking-wide text-muted font-semibold">' + label + '</span>' + inner + '</label>';
+  const jobOpts = '<option value="">— none —</option>' + STATE.jobs.map(j =>
+    '<option value="' + j.id + '"' + (c.jobId === j.id ? " selected" : "") + '>' + escapeHtml(j.company + " · " + j.role) + '</option>').join("");
+
+  openModal(
+    '<div class="flex items-center justify-between px-5 py-4 border-b border-line">' +
+      '<h3 class="font-bold text-white">' + (isEdit ? "Edit HR Contact" : "Add HR Contact") + '</h3>' +
+      '<button id="cClose" class="text-muted hover:text-white"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg></button>' +
+    '</div>' +
+    '<form id="contactForm" class="p-5 space-y-3 overflow-y-auto">' +
+      '<div class="grid grid-cols-2 gap-3">' +
+        field("Name *", '<input name="name" required value="' + escapeAttr(c.name || "") + '" class="' + inputCls + '">') +
+        field("Title", '<input name="title" value="' + escapeAttr(c.title || "") + '" class="' + inputCls + '" placeholder="Technical Recruiter">') +
+      '</div>' +
+      '<div class="grid grid-cols-2 gap-3">' +
+        field("Company", '<input name="company" value="' + escapeAttr(c.company || "") + '" class="' + inputCls + '">') +
+        field("Email", '<input name="email" type="email" value="' + escapeAttr(c.email || "") + '" class="' + inputCls + '" placeholder="name@company.com">') +
+      '</div>' +
+      '<div class="grid grid-cols-2 gap-3">' +
+        field("Phone", '<input name="phone" value="' + escapeAttr(c.phone || "") + '" class="' + inputCls + '">') +
+        field("LinkedIn / URL", '<input name="linkedin" value="' + escapeAttr(c.linkedin || "") + '" class="' + inputCls + '" placeholder="https://linkedin.com/in/...">') +
+      '</div>' +
+      field("Link to Application", '<select name="jobId" class="' + inputCls + '">' + jobOpts + '</select>') +
+      field("Source", '<input name="source" value="' + escapeAttr(c.source || "Apify / Claude connector") + '" class="' + inputCls + '">') +
+      field("Notes", '<textarea name="notes" rows="2" class="' + inputCls + '">' + escapeHtml(c.notes || "") + '</textarea>') +
+    '</form>' +
+    '<div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-line">' +
+      '<button id="cCancel" class="px-4 py-2 rounded-lg text-sm text-muted hover:text-white border border-line">Cancel</button>' +
+      '<button form="contactForm" type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold bg-gradient-to-r from-accent to-accent2 text-white hover:brightness-110">' + (isEdit ? "Save" : "Add Contact") + '</button>' +
+    '</div>',
+    { size: "max-w-xl" }
+  );
+
+  document.getElementById("cClose").onclick = closeModal;
+  document.getElementById("cCancel").onclick = closeModal;
+  document.getElementById("contactForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const f = e.target;
+    const name = f.name.value.trim();
+    if (!name) { toast("Name is required.", "bad"); return; }
+    const email = f.email.value.trim();
+    if (email && !isValidEmail(email)) { toast("Enter a valid email or leave it blank.", "bad"); return; }
+    const linkedin = f.linkedin.value.trim();
+    if (linkedin && !/^https?:\/\//i.test(linkedin)) { toast("LinkedIn/URL must start with http(s)://", "bad"); return; }
+
+    const payload = {
+      name, title: f.title.value.trim(), company: f.company.value.trim(),
+      email, phone: f.phone.value.trim(), linkedin, jobId: f.jobId.value || null,
+      source: f.source.value.trim() || "Manual", notes: f.notes.value.trim()
+    };
+    const submitBtn = f.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.disabled = true;
+    try {
+      if (isEdit) {
+        await repo.updateContact(c.id, payload);
+        closeModal(); commit(); toast("Contact updated.", "good");
+      } else {
+        await repo.createContact(payload);
+        closeModal(); commit(); toast("Contact added.", "good");
+      }
+    } catch (err) {
+      if (submitBtn) submitBtn.disabled = false;
+      toast("Could not save contact: " + err.message, "bad");
+    }
+  };
+}
+
+/* ---- Email composer (deterministic, mailto + copy) ---- */
+function buildOutreachEmail(contact, job) {
+  const recruiter = (contact.name || "there").split(/\s+/)[0];
+  const company = contact.company || (job ? job.company : "your company");
+  const role = job ? job.role + " role" : "a software engineering role";
+  const stack = job && job.stack.length ? job.stack.join(", ") :
+    parseStack(STATE.resumeStack).slice(0, 5).join(", ");
+  const subject = "Interest in " + (job ? job.role + " opportunities" : "engineering opportunities") + " at " + company;
+  const lines = [];
+  lines.push("Hi " + recruiter + ",");
+  lines.push("");
+  lines.push("I came across " + (job ? "the " + role : "engineering openings") + " at " + company +
+    " and wanted to reach out directly. I'm a software engineer with hands-on experience in " +
+    (stack || "modern full-stack development") + ".");
+  lines.push("");
+  lines.push("A few quick highlights:");
+  lines.push("  • [Impact metric — e.g. cut p99 latency 40% on a service handling 2M req/day]");
+  lines.push("  • [Relevant project that maps to " + company + "'s stack or product]");
+  lines.push("  • [Ownership example — shipped a feature end-to-end]");
+  lines.push("");
+  if (job && job.referral === "Have Referral") {
+    lines.push("I was referred by a contact on the team and would love to formally start the conversation.");
+    lines.push("");
+  }
+  lines.push("Would you have 15 minutes this week to chat about how I could contribute? I'm happy to share my resume and portfolio.");
+  lines.push("");
+  lines.push("Best regards,");
+  lines.push("[Your Name]");
+  lines.push("[Phone] · [Email] · [LinkedIn/GitHub]");
+  return { subject, body: lines.join("\n") };
+}
+
+function openEmailModal(contact) {
+  const job = contact.jobId ? STATE.jobs.find(j => j.id === contact.jobId) : null;
+  const email = buildOutreachEmail(contact, job);
+  const inputCls = "w-full bg-ink border border-line rounded-lg px-3 py-2 text-sm text-white focus:border-accent outline-none";
+
+  openModal(
+    '<div class="flex items-center justify-between px-5 py-4 border-b border-line">' +
+      '<div><h3 class="font-bold text-white">Email ' + escapeHtml(contact.name || "Contact") + '</h3>' +
+        '<p class="text-xs text-muted">' + escapeHtml(contact.email) + (job ? ' · re: ' + escapeHtml(job.company) : "") + '</p></div>' +
+      '<button id="eClose" class="text-muted hover:text-white"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg></button>' +
+    '</div>' +
+    '<div class="p-5 space-y-3 overflow-y-auto">' +
+      '<label class="block"><span class="text-[11px] uppercase tracking-wide text-muted font-semibold">To</span>' +
+        '<input id="eTo" value="' + escapeAttr(contact.email) + '" class="mt-1 ' + inputCls + '"></label>' +
+      '<label class="block"><span class="text-[11px] uppercase tracking-wide text-muted font-semibold">Subject</span>' +
+        '<input id="eSubject" value="' + escapeAttr(email.subject) + '" class="mt-1 ' + inputCls + '"></label>' +
+      '<label class="block"><span class="text-[11px] uppercase tracking-wide text-muted font-semibold">Body (edit the bracketed parts)</span>' +
+        '<textarea id="eBody" rows="14" class="mt-1 ' + inputCls + ' font-mono text-xs leading-relaxed">' + escapeHtml(email.body) + '</textarea></label>' +
+    '</div>' +
+    '<div class="flex items-center justify-between gap-2 px-5 py-4 border-t border-line">' +
+      '<button id="eCopy" class="px-4 py-2 rounded-lg text-sm border border-line text-muted hover:text-white">Copy Body</button>' +
+      '<div class="flex gap-2">' +
+        '<button id="eCancel" class="px-4 py-2 rounded-lg text-sm text-muted hover:text-white border border-line">Close</button>' +
+        '<button id="eSend" class="px-4 py-2 rounded-lg text-sm font-semibold bg-gradient-to-r from-accent to-accent2 text-white hover:brightness-110 flex items-center gap-2">' +
+          '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>Open in Mail</button>' +
+      '</div>' +
+    '</div>',
+    { size: "max-w-2xl" }
+  );
+
+  document.getElementById("eClose").onclick = closeModal;
+  document.getElementById("eCancel").onclick = closeModal;
+  document.getElementById("eCopy").onclick = () => copyText(document.getElementById("eBody").value, "Email body copied.");
+  document.getElementById("eSend").onclick = () => {
+    const to = document.getElementById("eTo").value.trim();
+    const subject = document.getElementById("eSubject").value;
+    const body = document.getElementById("eBody").value;
+    if (!isValidEmail(to)) { toast("Recipient email is invalid.", "bad"); return; }
+    const href = "mailto:" + encodeURIComponent(to) +
+      "?subject=" + encodeURIComponent(subject) +
+      "&body=" + encodeURIComponent(body);
+    // Many mail clients silently truncate/ignore mailto links beyond ~1800-2000 chars.
+    if (href.length > 1800) {
+      copyText(body, "Email is long — body copied. Opening a blank draft to paste into.");
+      window.location.href = "mailto:" + encodeURIComponent(to) + "?subject=" + encodeURIComponent(subject);
+      return;
+    }
+    window.location.href = href;
+    toast("Opening your mail client…", "info");
+  };
+}
+
+/* ======================================================================
+   VIEW 5 — ANALYTICS DASHBOARD
+   ====================================================================== */
+function renderAnalytics(host) {
+  const total = STATE.jobs.length;
+  const counts = {};
+  COLUMN_IDS.forEach(id => counts[id] = jobsByStatus(id).length);
+
+  const applied = counts.applied + counts.interviewing + counts.offer + counts.rejected; // anything that left wishlist
+  const reachedInterview = counts.interviewing + counts.offer; // currently/most-advanced
+  // conversion = of everything we applied to, how many reached interviewing-or-beyond (use history for accuracy)
+  let everApplied = 0, everInterviewed = 0, everOffer = 0;
+  STATE.jobs.forEach(j => {
+    const stages = new Set([j.status, ...j.history.map(h => h.to), ...j.history.map(h => h.from)]);
+    if (stages.has("applied") || stages.has("interviewing") || stages.has("offer") || stages.has("rejected")) everApplied++;
+    if (stages.has("interviewing") || stages.has("offer")) everInterviewed++;
+    if (stages.has("offer")) everOffer++;
+  });
+  const convInterview = everApplied ? Math.round((everInterviewed / everApplied) * 100) : 0;
+  const convOffer = everInterviewed ? Math.round((everOffer / everInterviewed) * 100) : 0;
+
+  // stack breakdown
+  const stackCounts = {};
+  STATE.jobs.forEach(j => j.stack.forEach(s => { const k = s.trim(); if (k) stackCounts[k] = (stackCounts[k] || 0) + 1; }));
+  const topStacks = Object.entries(stackCounts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const maxStack = topStacks.length ? topStacks[0][1] : 1;
+
+  // role breakdown
+  const roleCounts = {};
+  STATE.jobs.forEach(j => { roleCounts[j.role] = (roleCounts[j.role] || 0) + 1; });
+
+  // 30-day velocity: applications added per day (by dateAdded) + status moves
+  const days = 30;
+  const addedPerDay = new Array(days).fill(0);
+  const movesPerDay = new Array(days).fill(0);
+  const start = daysAgo(days - 1).getTime();
+  STATE.jobs.forEach(j => {
+    const d = new Date(j.dateAdded); d.setHours(0, 0, 0, 0);
+    const idx = Math.floor((d.getTime() - start) / 86400000);
+    if (idx >= 0 && idx < days) addedPerDay[idx]++;
+    j.history.forEach(h => {
+      const hd = new Date(h.ts); hd.setHours(0, 0, 0, 0);
+      const hidx = Math.floor((hd.getTime() - start) / 86400000);
+      if (hidx >= 0 && hidx < days) movesPerDay[hidx]++;
+    });
+  });
+  const maxVel = Math.max(1, Math.max.apply(null, addedPerDay.concat(movesPerDay)));
+
+  const metric = (label, value, sub, color) =>
+    '<div class="bg-panel rounded-2xl border border-line p-4">' +
+      '<div class="text-[11px] uppercase tracking-wide text-muted font-semibold">' + label + '</div>' +
+      '<div class="text-3xl font-bold mt-1 ' + (color || "text-white") + '">' + value + '</div>' +
+      '<div class="text-xs text-muted mt-1">' + sub + '</div>' +
+    '</div>';
+
+  const funnelBar = (label, n, color) => {
+    const pct = total ? clampNum(Math.round((n / total) * 100), 0, 100) : 0;
+    return '<div><div class="flex justify-between text-xs mb-1"><span class="text-slate-300">' + escapeHtml(label) + '</span><span class="font-mono text-muted">' + n + '</span></div>' +
+      '<div class="h-3 rounded-full bg-ink overflow-hidden"><div class="h-full rounded-full transition-all" style="width:' + Math.max(pct, n ? 4 : 0) + '%;background:' + color + '"></div></div></div>';
+  };
+
+  const velBars = addedPerDay.map((v, i) => {
+    const h = Math.round((v / maxVel) * 100);
+    const m = Math.round((movesPerDay[i] / maxVel) * 100);
+    const date = new Date(start + i * 86400000);
+    const lbl = date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    return '<div class="flex-1 flex flex-col items-center justify-end gap-0.5 group relative" style="min-width:6px">' +
+      '<div class="w-full flex flex-col justify-end gap-px" style="height:120px">' +
+        '<div class="w-full rounded-t bg-accent2/70" style="height:' + m + '%"></div>' +
+        '<div class="w-full rounded-t bg-accent" style="height:' + h + '%"></div>' +
+      '</div>' +
+      '<div class="absolute -top-7 hidden group-hover:block bg-ink border border-line rounded px-1.5 py-0.5 text-[10px] text-white whitespace-nowrap z-10">' + lbl + ': ' + v + ' added, ' + movesPerDay[i] + ' moves</div>' +
+      '</div>';
+  }).join("");
+
+  const stackHTML = topStacks.length ? topStacks.map(([name, n]) => {
+    const pct = clampNum(Math.round((n / maxStack) * 100), 6, 100);
+    return '<div class="flex items-center gap-2"><span class="text-xs text-slate-300 w-24 truncate">' + escapeHtml(name) + '</span>' +
+      '<div class="flex-1 h-2.5 rounded-full bg-ink overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-accent to-accent2" style="width:' + pct + '%"></div></div>' +
+      '<span class="text-xs font-mono text-muted w-5 text-right">' + n + '</span></div>';
+  }).join("") : '<div class="text-xs text-muted">Add tech stacks to your applications to see this breakdown.</div>';
+
+  const roleHTML = Object.entries(roleCounts).sort((a, b) => b[1] - a[1]).map(([r, n]) =>
+    '<span class="text-xs px-2.5 py-1 rounded-lg bg-panel2 border border-line text-slate-300">' + escapeHtml(r) + ' <span class="font-mono text-accent">' + n + '</span></span>').join("") ||
+    '<span class="text-xs text-muted">No roles yet.</span>';
+
+  host.innerHTML =
+    '<div class="h-full overflow-y-auto p-4 md:p-6"><div class="max-w-6xl mx-auto space-y-4">' +
+      '<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">' +
+        metric("Total Applications", total, COLUMN_IDS.map(id => COLUMN_LABEL[id] + ": " + counts[id]).slice(0, 2).join(" · "), "text-white") +
+        metric("Apply → Interview", convInterview + "%", everInterviewed + " of " + everApplied + " applications", convInterview >= 30 ? "text-good" : convInterview > 0 ? "text-warn" : "text-muted") +
+        metric("Interview → Offer", convOffer + "%", everOffer + " offer" + (everOffer === 1 ? "" : "s") + " from " + everInterviewed + " interviews", convOffer >= 30 ? "text-good" : convOffer > 0 ? "text-warn" : "text-muted") +
+        metric("Active Pipeline", (counts.applied + counts.interviewing + counts.offer), "in play (excl. wishlist & rejected)", "text-accent") +
+      '</div>' +
+      '<div class="grid lg:grid-cols-3 gap-4">' +
+        '<div class="bg-panel rounded-2xl border border-line p-4">' +
+          '<h3 class="font-semibold text-white text-sm mb-3">Pipeline Funnel</h3>' +
+          '<div class="space-y-3">' +
+            funnelBar("Wishlist", counts.wishlist, "#8aa0bd") +
+            funnelBar("Applied", counts.applied, "#5b8cff") +
+            funnelBar("Interviewing", counts.interviewing, "#fbbf24") +
+            funnelBar("Offer", counts.offer, "#34d399") +
+            funnelBar("Rejected", counts.rejected, "#f87171") +
+          '</div>' +
+        '</div>' +
+        '<div class="bg-panel rounded-2xl border border-line p-4">' +
+          '<h3 class="font-semibold text-white text-sm mb-3">Targeted Tech Stacks</h3>' +
+          '<div class="space-y-2">' + stackHTML + '</div>' +
+        '</div>' +
+        '<div class="bg-panel rounded-2xl border border-line p-4">' +
+          '<h3 class="font-semibold text-white text-sm mb-3">Roles Targeted</h3>' +
+          '<div class="flex flex-wrap gap-2">' + roleHTML + '</div>' +
+          '<h3 class="font-semibold text-white text-sm mb-2 mt-4">Snapshot</h3>' +
+          '<div class="space-y-1.5 text-xs text-muted">' +
+            '<div class="flex justify-between"><span>HR contacts stored</span><span class="font-mono text-white">' + STATE.contacts.length + '</span></div>' +
+            '<div class="flex justify-between"><span>LeetCode solved</span><span class="font-mono text-white">' + STATE.leetcode.length + '</span></div>' +
+            '<div class="flex justify-between"><span>CS topics done</span><span class="font-mono text-white">' + CS_TOPICS.filter(t => STATE.csChecklist[t.key]).length + '/' + CS_TOPICS.length + '</span></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="bg-panel rounded-2xl border border-line p-4">' +
+        '<div class="flex items-center justify-between mb-3"><h3 class="font-semibold text-white text-sm">Rolling 30-Day Velocity</h3>' +
+          '<div class="flex items-center gap-4 text-xs"><span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-accent"></span>Added</span>' +
+          '<span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-accent2/70"></span>Status moves</span></div></div>' +
+        '<div class="flex items-end gap-0.5 overflow-x-auto pb-1">' + velBars + '</div>' +
+        '<div class="text-[10px] text-muted mt-1 flex justify-between"><span>' + new Date(start).toLocaleDateString(undefined, { month: "short", day: "numeric" }) + '</span><span>Today</span></div>' +
+      '</div>' +
+    '</div></div>';
+}
+
+/* ======================================================================
+   GLOBAL CHROME: header buttons, export/import/reset
+   ====================================================================== */
+function exportData() {
+  const blob = new Blob([JSON.stringify(STATE, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "devhunt-backup-" + todayStr() + ".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast("Backup exported.", "good");
+}
+function importDataFromFile(file) {
+  const reader = new FileReader();
+  reader.onload = async () => {
+    let parsed;
+    try { parsed = JSON.parse(reader.result); }
+    catch (e) { toast("Invalid JSON file.", "bad"); return; }
+    try {
+      await apiCall("POST", "/restore", parsed);
+      await reloadAndRender();
+      toast("Data imported & saved to MongoDB.", "good");
+    } catch (e) {
+      toast("Import failed: " + e.message, "bad");
+    }
+  };
+  reader.onerror = () => toast("Could not read file.", "bad");
+  reader.readAsText(file);
+}
+
+async function reloadAndRender() {
+  await loadState();
+  renderNav();
+  renderChrome();
+  setHeaderForView(STATE.activeView);
+  renderActiveView();
+}
+
+function setHeaderForView(id) {
+  const meta = VIEWS.find(v => v.id === id) || VIEWS[0];
+  document.getElementById("viewTitle").textContent = meta.title;
+  document.getElementById("viewSub").textContent = meta.sub;
+}
+
+function wireGlobalChrome() {
+  document.getElementById("addJobBtn").onclick = () => openJobModal(null);
+  document.getElementById("exportBtn").onclick = exportData;
+  document.getElementById("importBtn").onclick = () => document.getElementById("fileInput").click();
+  document.getElementById("fileInput").onchange = (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (f) importDataFromFile(f);
+    e.target.value = "";
+  };
+  document.getElementById("resetBtn").onclick = async () => {
+    if (confirm("Reset ALL data back to the seeded demo state? This erases your saved applications, contacts, and progress in MongoDB.")) {
+      try {
+        await apiCall("POST", "/reset");
+        await reloadAndRender();
+        toast("Data reset to demo state.", "warn");
+      } catch (e) { toast("Reset failed: " + e.message, "bad"); }
+    }
+  };
+}
+
+/* If we booted (or fell) into offline mode, retry the API and re-sync once it's
+   reachable again — on the browser 'online' event and via a light poll. */
+let reconnectTimer = null;
+function watchForReconnect() {
+  const tryResync = async () => {
+    if (!OFFLINE) return;
+    try {
+      await apiCall("GET", "/health");
+      await reloadAndRender();
+      if (!OFFLINE) toast("Reconnected — synced with the server.", "good");
+    } catch (_) { /* still offline */ }
+  };
+  window.addEventListener("online", tryResync);
+  if (!reconnectTimer) reconnectTimer = setInterval(() => { if (OFFLINE) tryResync(); }, 15000);
+}
+
+/* ------------------------------ Boot ----------------------------------- */
+async function boot() {
+  wireGlobalChrome();
+  await loadState();
+  if (OFFLINE) toast("Offline — showing cached data. Will sync when the server is reachable.", "warn");
+  watchForReconnect();
+  renderNav();
+  renderChrome();
+  setHeaderForView(STATE.activeView);
+  renderActiveView();
+  // flush any pending profile autosave before the tab closes. A normal fetch is
+  // unreliable during unload, so use sendBeacon which the browser guarantees to send.
+  window.addEventListener("beforeunload", () => {
+    if (!Object.keys(pendingProfilePatch).length) return;
+    try {
+      const blob = new Blob([JSON.stringify(pendingProfilePatch)], { type: "application/json" });
+      if (navigator.sendBeacon && navigator.sendBeacon(API + "/profile/beacon", blob)) {
+        pendingProfilePatch = {};
+        return;
+      }
+    } catch (_) {}
+    flushProfile(); // best-effort fallback
+  });
+}
+document.addEventListener("DOMContentLoaded", boot);
+</script>
+</body>
+</html>
