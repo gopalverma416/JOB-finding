@@ -1,0 +1,18 @@
+{
+  "name": "DevHunt (Node + MongoDB)",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "forwardPorts": [4000, 27017],
+  "portsAttributes": {
+    "4000": { "label": "DevHunt app", "onAutoForward": "openPreview" },
+    "27017": { "label": "MongoDB", "onAutoForward": "silent" }
+  },
+  "postCreateCommand": "npm install && cp -n .env.example .env && npm run seed",
+  "postAttachCommand": "echo 'Run: npm start  →  then open the forwarded port 4000'",
+  "customizations": {
+    "vscode": {
+      "extensions": ["dbaeumer.vscode-eslint", "mongodb.mongodb-vscode"]
+    }
+  }
+}

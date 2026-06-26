@@ -38,7 +38,27 @@ job-hunt-companion/
   - a local server (`mongod` on `mongodb://127.0.0.1:27017`), or
   - a free **MongoDB Atlas** cluster (cloud).
 
-## Setup
+## Running it — pick one
+
+### Option A — GitHub Codespaces (zero setup, recommended)
+
+This repo ships a **devcontainer** that automatically starts MongoDB alongside the app.
+
+1. On GitHub, click **Code ▸ Codespaces ▸ Create codespace on main**.
+2. Wait for it to build (it auto-runs `npm install`, creates `.env`, and seeds demo data).
+3. In the terminal run `npm start`.
+4. When the **port 4000** notification pops up, click **Open in Browser**.
+
+MongoDB is already running inside the codespace (no Atlas account needed) — `MONGODB_URI` is preset to `mongodb://mongo:27017/devhunt`.
+
+### Option B — Docker (one command, local)
+
+```bash
+docker compose up --build
+# open http://localhost:4000   (MongoDB is started for you)
+```
+
+### Option C — Run locally with Node
 
 ```bash
 # 1. install dependencies

@@ -1,0 +1,26 @@
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/javascript-node:18
+    command: sleep infinity
+    volumes:
+      - ..:/workspace:cached
+    environment:
+      # the app reads MONGODB_URI; point it at the mongo service below
+      MONGODB_URI: mongodb://mongo:27017/devhunt
+      PORT: "4000"
+      CORS_ORIGIN: "*"
+    ports:
+      - "4000:4000"
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27017:27017"
+
+volumes:
+  mongo-data:
